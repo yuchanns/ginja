@@ -25,6 +25,29 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+typedef enum mj_code {
+  MJ_NON_PRIMITIVE,
+  MJ_NON_KEY,
+  MJ_INVALID_OPERATION,
+  MJ_SYNTAX_ERROR,
+  MJ_TEMPLATE_NOT_FOUND,
+  MJ_TOO_MANY_ARGUMENTS,
+  MJ_MISSING_ARGUMENT,
+  MJ_UNKNOWN_FILTER,
+  MJ_UNKNOWN_TEST,
+  MJ_UNKNOWN_FUNCTION,
+  MJ_UNKNOWN_METHOD,
+  MJ_BAD_ESCAPE,
+  MJ_UNDEFINED_ERROR,
+  MJ_BAD_SERIALIZATION,
+  MJ_CANNOT_DESERIALIZE,
+  MJ_BAD_INCLUDE,
+  MJ_EVAL_BLOCK,
+  MJ_CANNOT_UNPACK,
+  MJ_WRITE_FAILURE,
+  MJ_UNKNOWN_BLOCK,
+} mj_code;
+
 typedef struct mj_env {
   void *inner;
 } mj_env;
@@ -33,6 +56,14 @@ typedef struct mj_result_env_new {
   struct mj_env *env;
 } mj_result_env_new;
 
+typedef struct mj_error {
+  enum mj_code code;
+} mj_error;
+
+typedef struct mj_result_env_add_template {
+  struct mj_error *error;
+} mj_result_env_add_template;
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -40,6 +71,12 @@ extern "C" {
 void mj_env_free(const struct mj_env *ptr);
 
 struct mj_result_env_new mj_env_new(void);
+
+struct mj_result_env_add_template mj_env_add_template(struct mj_env *env,
+                                                      const char *name,
+                                                      const char *source);
+
+void mj_error_free(const struct mj_error *ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

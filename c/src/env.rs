@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use std::ffi::{c_char, c_void};
 
 use minijinja::Environment;
 
@@ -7,6 +7,12 @@ use super::*;
 #[repr(C)]
 pub struct mj_env {
     pub inner: *mut c_void,
+}
+
+impl mj_env {
+    pub(crate) fn deref_mut(&mut self) -> &mut Environment {
+        unsafe { &mut *(self.inner as *mut Environment) }
+    }
 }
 
 impl mj_env {
@@ -28,5 +34,34 @@ pub unsafe extern "C" fn mj_env_new() -> mj_result_env_new {
         env: Box::into_raw(Box::new(mj_env {
             inner: Box::into_raw(Box::new(env)) as *mut c_void,
         })),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mj_env_add_template(
+    env: *mut mj_env,
+    name: *const c_char,
+    source: *const c_char,
+) -> mj_result_env_add_template {
+    assert!(!name.is_null());
+    assert!(!source.is_null());
+    let name = unsafe {
+        std::ffi::CStr::from_ptr(name)
+            .to_str()
+            .expect("malformed name")
+    };
+    let source = unsafe {
+        std::ffi::CStr::from_ptr(source)
+            .to_str()
+            .expect("malformed template")
+    };
+    let env = unsafe { &mut *env }.deref_mut();
+    match env.add_template(name, source) {
+        Ok(_) => mj_result_env_add_template {
+            error: std::ptr::null_mut(),
+        },
+        Err(e) => mj_result_env_add_template {
+            error: mj_error::new(e),
+        },
     }
 }

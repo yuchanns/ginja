@@ -5,10 +5,12 @@
 // Nearly all the functions exposed to C FFI are unsafe.
 #![allow(clippy::missing_safety_doc)]
 
+mod env;
+mod errors;
 mod result;
 
+pub use result::mj_result_env_add_template;
 pub use result::mj_result_env_new;
 
-pub mod env;
-
 pub use env::mj_env;
+pub use errors::mj_error;
