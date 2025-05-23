@@ -24,7 +24,7 @@ try {
     }
 
     # Run tests
-    ctest -C Debug
+    ctest -C Debug --rerun-failed --output-on-failure
     if ($LASTEXITCODE -ne 0) {
         throw "CTest failed with exit code $LASTEXITCODE"
     }

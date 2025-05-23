@@ -58,11 +58,21 @@ typedef struct mj_result_env_new {
 
 typedef struct mj_error {
   enum mj_code code;
+  const char *message;
 } mj_error;
 
 typedef struct mj_result_env_add_template {
   struct mj_error *error;
 } mj_result_env_add_template;
+
+typedef struct mj_result_env_render_template {
+  char *result;
+  struct mj_error *error;
+} mj_result_env_render_template;
+
+typedef struct mj_value {
+  void *inner;
+} mj_value;
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,7 +86,17 @@ struct mj_result_env_add_template mj_env_add_template(struct mj_env *env,
                                                       const char *name,
                                                       const char *source);
 
+struct mj_result_env_render_template mj_env_render_template(struct mj_env *env,
+                                                            const char *name,
+                                                            const struct mj_value *value);
+
 void mj_error_free(const struct mj_error *ptr);
+
+struct mj_value *mj_value_new(void);
+
+void mj_value_free(struct mj_value *ptr);
+
+void mj_value_set_string(struct mj_value *self, const char *key, const char *val);
 
 #ifdef __cplusplus
 }  // extern "C"

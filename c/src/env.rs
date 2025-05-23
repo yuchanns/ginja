@@ -1,4 +1,4 @@
-use std::ffi::{c_char, c_void};
+use std::ffi::{CString, c_char, c_void};
 
 use minijinja::Environment;
 
@@ -61,6 +61,43 @@ pub unsafe extern "C" fn mj_env_add_template(
             error: std::ptr::null_mut(),
         },
         Err(e) => mj_result_env_add_template {
+            error: mj_error::new(e),
+        },
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mj_env_render_template(
+    env: *mut mj_env,
+    name: *const c_char,
+    value: *const mj_value,
+) -> mj_result_env_render_template {
+    assert!(!name.is_null());
+    let name = unsafe {
+        std::ffi::CStr::from_ptr(name)
+            .to_str()
+            .expect("malformed name")
+    };
+    let env = unsafe { &mut *env }.deref_mut();
+    let template = match env.get_template(name) {
+        Ok(template) => template,
+        Err(e) => {
+            return mj_result_env_render_template {
+                result: std::ptr::null_mut(),
+                error: mj_error::new(e),
+            };
+        }
+    };
+    let value = unsafe { &*value }.deref();
+    match template.render(value) {
+        Ok(rendered) => mj_result_env_render_template {
+            result: CString::new(rendered)
+                .expect("CString::new failed")
+                .into_raw(),
+            error: std::ptr::null_mut(),
+        },
+        Err(e) => mj_result_env_render_template {
+            result: std::ptr::null_mut(),
             error: mj_error::new(e),
         },
     }

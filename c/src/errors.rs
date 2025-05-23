@@ -1,3 +1,5 @@
+use std::ffi::{CString, c_char};
+
 use minijinja::{Error, ErrorKind};
 
 #[repr(C)]
@@ -57,13 +59,25 @@ impl From<ErrorKind> for mj_code {
 #[repr(C)]
 pub struct mj_error {
     code: mj_code,
+    message: *const c_char,
 }
 
 impl mj_error {
     pub fn new(error: Error) -> *mut Self {
         let code = mj_code::from(error.kind());
-        // TODO: add error message
-        Box::into_raw(Box::new(mj_error { code }))
+        let mut err = &error as &dyn std::error::Error;
+        let mut message = err.to_string();
+        while let Some(cause) = err.source() {
+            message.push_str("\nCaused by: ");
+            message.push_str(cause.to_string().as_str());
+            err = cause;
+        }
+        Box::into_raw(Box::new(mj_error {
+            code,
+            message: CString::new(message)
+                .expect("CString::new failed")
+                .into_raw(),
+        }))
     }
 
     #[unsafe(no_mangle)]
