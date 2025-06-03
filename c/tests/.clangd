@@ -1,7 +1,11 @@
 # .clangd
 CompileFlags:
   Add:
+    - -std=c++14
     - -I../include
+    - -I../build/_deps/googletest-src/googletest/include
+    - -I../build/_deps/googletest-src/googlemock/include
+    - -DGTEST_HAS_PTHREAD=1
 Diagnostics:
-  UnusedIncludes: Strict
-  MissingIncludes: Strict
+  UnusedIncludes: None
+  MissingIncludes: None

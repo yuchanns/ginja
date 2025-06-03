@@ -17,3 +17,9 @@ pub struct mj_result_env_render_template {
     pub result: *mut c_char,
     pub error: *mut mj_error,
 }
+
+#[repr(C)]
+pub struct mj_result_env_eval_expr {
+    pub result: *mut mj_value,
+    pub error: *mut mj_error,
+}

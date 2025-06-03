@@ -35,6 +35,7 @@ TEST(EnvTest, BasicCreateAndFree) {
   // Check if the rendered output is as expected
   EXPECT_STREQ(render_result.result, "Hello world")
       << "Rendered output should match the expected string";
+  mj_str_free(render_result.result);  // Free the rendered string
 
   // Free the value
   mj_value_free(value);
@@ -61,6 +62,122 @@ TEST(ValueTest, SetIntegerValues) {
   auto render_result = mj_env_render_template(env_result.env, "int_template", value);
   EXPECT_EQ(render_result.error, nullptr);
   EXPECT_STREQ(render_result.result, "Number: 9223372036854775807");
+  mj_str_free(render_result.result);
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvOptionsTest, WhitespaceControl) {
+  // Test whitespace control options
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+
+  // Test lstrip_blocks option
+  mj_env_set_lstrip_blocks(env_result.env, true);
+  // First set both trim_blocks and lstrip_blocks to get expected whitespace behavior
+  mj_env_set_trim_blocks(env_result.env, true);
+  mj_env_set_lstrip_blocks(env_result.env, true);
+  
+  auto add_result1 = mj_env_add_template(env_result.env, "lstrip_test", 
+    "    {% if true %}\n    Hello\n    {% endif %}");
+  EXPECT_EQ(add_result1.error, nullptr);
+
+  auto render_result1 = mj_env_render_template(env_result.env, "lstrip_test", value);
+  EXPECT_EQ(render_result1.error, nullptr);
+  // With both trim_blocks and lstrip_blocks enabled, we expect clean whitespace
+  EXPECT_STREQ(render_result1.result, "    Hello\n");
+  mj_str_free(render_result1.result);
+
+  // Test trim_blocks option
+  mj_env_set_trim_blocks(env_result.env, true);
+  auto add_result2 = mj_env_add_template(env_result.env, "trim_test", "{% for i in [1, 2] %}\nItem {{ i }}\n{% endfor %}");
+  EXPECT_EQ(add_result2.error, nullptr);
+
+  const int32_t nums[] = {1, 2};
+  mj_value_set_list_int32(value, "i", nums, 2);
+  auto render_result2 = mj_env_render_template(env_result.env, "trim_test", value);
+  EXPECT_EQ(render_result2.error, nullptr);
+  EXPECT_STREQ(render_result2.result, "Item 1\nItem 2\n");
+  mj_str_free(render_result2.result);
+
+  // Test keep_trailing_newline option
+  mj_env_set_keep_trailing_newline(env_result.env, false);
+  auto add_result3 = mj_env_add_template(env_result.env, "newline_test", "Hello\n");
+  EXPECT_EQ(add_result3.error, nullptr);
+
+  auto render_result3 = mj_env_render_template(env_result.env, "newline_test", value);
+  EXPECT_EQ(render_result3.error, nullptr);
+  EXPECT_STREQ(render_result3.result, "Hello");
+  mj_str_free(render_result3.result);
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvOptionsTest, SpecialOptions) {
+  // Test special environment options
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+
+  // Test recursion limit
+  mj_env_set_recursion_limit(env_result.env, 2);
+  auto add_result1 = mj_env_add_template(env_result.env, "recursive_test", 
+    "{% macro recursive(n) %}{{ recursive(n-1) }}{% endmacro %}{{ recursive(3) }}");
+  EXPECT_EQ(add_result1.error, nullptr);
+
+  auto render_result1 = mj_env_render_template(env_result.env, "recursive_test", value);
+  EXPECT_NE(render_result1.error, nullptr); // Should fail due to recursion limit
+  if (render_result1.error != nullptr) {
+    mj_error_free(render_result1.error);
+  }
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvOptionsTest, UndefinedBehavior) {
+  // Test undefined behavior settings
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+
+  // Test MJ_UNDEFINED_BEHAVIOR_LENIENT (default)
+  mj_env_set_undefined_behavior(env_result.env, MJ_UNDEFINED_BEHAVIOR_LENIENT);
+  auto add_result1 = mj_env_add_template(env_result.env, "lenient_test", "{{ undefined_var }}");
+  EXPECT_EQ(add_result1.error, nullptr);
+
+  auto render_result1 = mj_env_render_template(env_result.env, "lenient_test", value);
+  EXPECT_EQ(render_result1.error, nullptr);
+  EXPECT_STREQ(render_result1.result, "");
+  mj_str_free(render_result1.result);
+
+  // Test MJ_UNDEFINED_BEHAVIOR_STRICT
+  mj_env_set_undefined_behavior(env_result.env, MJ_UNDEFINED_BEHAVIOR_STRICT);
+  auto render_result2 = mj_env_render_template(env_result.env, "lenient_test", value);
+  EXPECT_NE(render_result2.error, nullptr);
+  if (render_result2.error != nullptr) {
+    EXPECT_EQ(render_result2.error->code, MJ_UNDEFINED_ERROR);
+    mj_error_free(render_result2.error);
+  }
+
+  // Test MJ_UNDEFINED_BEHAVIOR_CHAINABLE
+  mj_env_set_undefined_behavior(env_result.env, MJ_UNDEFINED_BEHAVIOR_CHAINABLE);
+  auto add_result3 = mj_env_add_template(env_result.env, "chainable_test", "{{ undefined_var.field }}");
+  EXPECT_EQ(add_result3.error, nullptr);
+
+  auto render_result3 = mj_env_render_template(env_result.env, "chainable_test", value);
+  EXPECT_EQ(render_result3.error, nullptr);
+  EXPECT_STREQ(render_result3.result, "");
+  mj_str_free(render_result3.result);
 
   mj_value_free(value);
   mj_env_free(env_result.env);
@@ -105,6 +222,7 @@ TEST(ValueTest, SetFloatValues) {
   auto render_result = mj_env_render_template(env_result.env, "float_template", value);
   EXPECT_EQ(render_result.error, nullptr);
   EXPECT_STREQ(render_result.result, "Pi: 3.141592653589793");
+  mj_str_free(render_result.result);
 
   mj_value_free(value);
   mj_env_free(env_result.env);
@@ -128,6 +246,7 @@ TEST(ValueTest, SetFloat32Values) {
   EXPECT_EQ(render_result.error, nullptr);
   // Note: Float precision might vary, so we check if it starts with expected value
   EXPECT_TRUE(strncmp(render_result.result, "Value: 3.14159", 14) == 0);
+  mj_str_free(render_result.result);
 
   mj_value_free(value);
   mj_env_free(env_result.env);
@@ -150,12 +269,14 @@ TEST(ValueTest, SetBoolValues) {
   auto render_result = mj_env_render_template(env_result.env, "bool_template", value);
   EXPECT_EQ(render_result.error, nullptr);
   EXPECT_STREQ(render_result.result, "Active");
+  mj_str_free(render_result.result);
 
   // Test with false
   mj_value_set_bool(value, "active", false);
   render_result = mj_env_render_template(env_result.env, "bool_template", value);
   EXPECT_EQ(render_result.error, nullptr);
   EXPECT_STREQ(render_result.result, "Inactive");
+  mj_str_free(render_result.result);
 
   mj_value_free(value);
   mj_env_free(env_result.env);
@@ -195,12 +316,13 @@ TEST(ErrorTest, ErrorHandling) {
   // Add template with invalid syntax
   auto add_result = mj_env_add_template(env_result.env, "invalid_template", "Hello {{ unclosed");
   
-  // This should produce an error
+  // This should produce a syntax error
+  EXPECT_NE(add_result.error, nullptr);
   if (add_result.error != nullptr) {
+    EXPECT_EQ(add_result.error->code, MJ_SYNTAX_ERROR);
     EXPECT_NE(add_result.error->message, nullptr);
     EXPECT_GT(strlen(add_result.error->message), 0);
     
-    // Test mj_error_free
     mj_error_free(add_result.error);
   }
 
@@ -435,7 +557,9 @@ TEST(ErrorTest, InvalidTemplateSyntax) {
 
   // Test unclosed variable
   auto add_result1 = mj_env_add_template(env_result.env, "unclosed_var", "Hello {{ name");
+  EXPECT_NE(add_result1.error, nullptr);
   if (add_result1.error != nullptr) {
+    EXPECT_EQ(add_result1.error->code, MJ_SYNTAX_ERROR);
     EXPECT_NE(add_result1.error->message, nullptr);
     EXPECT_GT(strlen(add_result1.error->message), 0);
     mj_error_free(add_result1.error);
@@ -443,7 +567,9 @@ TEST(ErrorTest, InvalidTemplateSyntax) {
 
   // Test unclosed block
   auto add_result2 = mj_env_add_template(env_result.env, "unclosed_block", "{% for item in items %}{{ item }}");
+  EXPECT_NE(add_result2.error, nullptr);
   if (add_result2.error != nullptr) {
+    EXPECT_EQ(add_result2.error->code, MJ_SYNTAX_ERROR);
     EXPECT_NE(add_result2.error->message, nullptr);
     EXPECT_GT(strlen(add_result2.error->message), 0);
     mj_error_free(add_result2.error);
@@ -461,6 +587,8 @@ TEST(ErrorTest, InvalidTemplateSyntax) {
     EXPECT_EQ(render_result.error->code, MJ_UNKNOWN_FILTER);
     EXPECT_NE(render_result.error->message, nullptr);
     mj_error_free(render_result.error);
+  } else {
+    mj_str_free(render_result.result);
   }
 
   mj_value_free(value);
@@ -559,6 +687,272 @@ TEST(EnvTest, TemplateOverwrite) {
   auto render_result = mj_env_render_template(env_result.env, "test_template", value);
   EXPECT_EQ(render_result.error, nullptr);
   EXPECT_STREQ(render_result.result, "New: test");
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvTest, RemoveTemplate) {
+  // Test removing templates from environment
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  // Add templates
+  auto add_result1 = mj_env_add_template(env_result.env, "template1", "Hello {{ name }}");
+  EXPECT_EQ(add_result1.error, nullptr);
+
+  auto add_result2 = mj_env_add_template(env_result.env, "template2", "Goodbye {{ name }}");
+  EXPECT_EQ(add_result2.error, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+  mj_value_set_string(value, "name", "World");
+
+  // Verify template1 exists and works
+  auto render_result1 = mj_env_render_template(env_result.env, "template1", value);
+  EXPECT_EQ(render_result1.error, nullptr);
+  EXPECT_STREQ(render_result1.result, "Hello World");
+
+  // Remove template1
+  mj_env_remove_template(env_result.env, "template1");
+
+  // Try to render removed template - should fail
+  auto render_result2 = mj_env_render_template(env_result.env, "template1", value);
+  EXPECT_NE(render_result2.error, nullptr);
+  EXPECT_EQ(render_result2.error->code, MJ_TEMPLATE_NOT_FOUND);
+  mj_error_free(render_result2.error);
+
+  // Verify template2 still works
+  auto render_result3 = mj_env_render_template(env_result.env, "template2", value);
+  EXPECT_EQ(render_result3.error, nullptr);
+  EXPECT_STREQ(render_result3.result, "Goodbye World");
+
+  // Test removing non-existent template (should not crash)
+  mj_env_remove_template(env_result.env, "non_existent");
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvTest, ClearTemplates) {
+  // Test clearing all templates from environment
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  // Add multiple templates
+  auto add_result1 = mj_env_add_template(env_result.env, "template1", "Hello {{ name }}");
+  EXPECT_EQ(add_result1.error, nullptr);
+
+  auto add_result2 = mj_env_add_template(env_result.env, "template2", "Goodbye {{ name }}");
+  EXPECT_EQ(add_result2.error, nullptr);
+
+  auto add_result3 = mj_env_add_template(env_result.env, "template3", "Welcome {{ name }}");
+  EXPECT_EQ(add_result3.error, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+  mj_value_set_string(value, "name", "World");
+
+  // Verify templates exist and work
+  auto render_result1 = mj_env_render_template(env_result.env, "template1", value);
+  EXPECT_EQ(render_result1.error, nullptr);
+  EXPECT_STREQ(render_result1.result, "Hello World");
+
+  // Clear all templates
+  mj_env_clear_templates(env_result.env);
+
+  // Try to render any template - should all fail
+  auto render_result2 = mj_env_render_template(env_result.env, "template1", value);
+  EXPECT_NE(render_result2.error, nullptr);
+  EXPECT_EQ(render_result2.error->code, MJ_TEMPLATE_NOT_FOUND);
+  mj_error_free(render_result2.error);
+
+  auto render_result3 = mj_env_render_template(env_result.env, "template2", value);
+  EXPECT_NE(render_result3.error, nullptr);
+  EXPECT_EQ(render_result3.error->code, MJ_TEMPLATE_NOT_FOUND);
+  mj_error_free(render_result3.error);
+
+  auto render_result4 = mj_env_render_template(env_result.env, "template3", value);
+  EXPECT_NE(render_result4.error, nullptr);
+  EXPECT_EQ(render_result4.error->code, MJ_TEMPLATE_NOT_FOUND);
+  mj_error_free(render_result4.error);
+
+  // Test that we can add templates again after clearing
+  auto add_result4 = mj_env_add_template(env_result.env, "new_template", "New {{ name }}");
+  EXPECT_EQ(add_result4.error, nullptr);
+
+  auto render_result5 = mj_env_render_template(env_result.env, "new_template", value);
+  EXPECT_EQ(render_result5.error, nullptr);
+  EXPECT_STREQ(render_result5.result, "New World");
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvTest, RenderNamedString) {
+  // Test rendering template from string without adding to environment
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+  mj_value_set_string(value, "name", "World");
+  mj_value_set_in32(value, "age", 25);
+
+  // Test basic named string rendering
+  auto render_result1 = mj_env_render_named_string(env_result.env, "inline_template", 
+                                                   "Hello {{ name }}, you are {{ age }} years old", value);
+  EXPECT_EQ(render_result1.error, nullptr);
+  EXPECT_STREQ(render_result1.result, "Hello World, you are 25 years old");
+
+  // Test with loops
+  const char* items[] = {"apple", "banana", "cherry"};
+  mj_value_set_list_string(value, "items", items, 3);
+  
+  auto render_result2 = mj_env_render_named_string(env_result.env, "list_template",
+                                                   "Items: {% for item in items %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}", value);
+  EXPECT_EQ(render_result2.error, nullptr);
+  EXPECT_STREQ(render_result2.result, "Items: apple, banana, cherry");
+
+  // Test with invalid syntax
+  auto render_result3 = mj_env_render_named_string(env_result.env, "invalid_template",
+                                                   "Hello {{ unclosed", value);
+  EXPECT_NE(render_result3.error, nullptr);
+  EXPECT_NE(render_result3.error->message, nullptr);
+  mj_error_free(render_result3.error);
+
+  // Test empty template
+  auto render_result4 = mj_env_render_named_string(env_result.env, "empty_template", "", value);
+  EXPECT_EQ(render_result4.error, nullptr);
+  EXPECT_STREQ(render_result4.result, "");
+
+  // Test template with no variables
+  auto render_result5 = mj_env_render_named_string(env_result.env, "static_template", 
+                                                   "This is a static template", value);
+  EXPECT_EQ(render_result5.error, nullptr);
+  EXPECT_STREQ(render_result5.result, "This is a static template");
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(MemoryTest, StringFree) {
+  // Test mj_str_free function
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+  mj_value_set_string(value, "name", "World");
+
+  auto add_result = mj_env_add_template(env_result.env, "test_template", "Hello {{ name }}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Render template to get a result string
+  auto render_result = mj_env_render_template(env_result.env, "test_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_NE(render_result.result, nullptr);
+  EXPECT_STREQ(render_result.result, "Hello World");
+
+  // Test mj_str_free - this should not crash
+  mj_str_free(render_result.result);
+
+  // Test multiple renders and frees
+  auto render_result2 = mj_env_render_template(env_result.env, "test_template", value);
+  EXPECT_EQ(render_result2.error, nullptr);
+  EXPECT_NE(render_result2.result, nullptr);
+  mj_str_free(render_result2.result);
+
+  // Test with named string rendering
+  auto render_result3 = mj_env_render_named_string(env_result.env, "inline", 
+                                                   "Goodbye {{ name }}", value);
+  EXPECT_EQ(render_result3.error, nullptr);
+  EXPECT_NE(render_result3.result, nullptr);
+  EXPECT_STREQ(render_result3.result, "Goodbye World");
+  mj_str_free(render_result3.result);
+
+  // Test freeing nullptr (should be safe)
+  mj_str_free(nullptr);
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(MemoryTest, ErrorFreeEdgeCases) {
+  // Test mj_error_free edge cases and multiple scenarios
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  // Test freeing nullptr error (should be safe)
+  mj_error_free(nullptr);
+
+  // Test multiple error scenarios and freeing
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+
+  // Generate multiple errors and free them
+  for (int i = 0; i < 5; i++) {
+    auto render_result = mj_env_render_template(env_result.env, "non_existent", value);
+    EXPECT_NE(render_result.error, nullptr);
+    if (render_result.error != nullptr) {
+      EXPECT_EQ(render_result.error->code, MJ_TEMPLATE_NOT_FOUND);
+      mj_error_free(render_result.error);
+    }
+  }
+
+  // Test with template syntax errors
+  auto add_result1 = mj_env_add_template(env_result.env, "bad1", "{{ unclosed");
+  if (add_result1.error != nullptr) {
+    mj_error_free(add_result1.error);
+  }
+
+  auto add_result2 = mj_env_add_template(env_result.env, "bad2", "{% for item %}no endfor");
+  if (add_result2.error != nullptr) {
+    mj_error_free(add_result2.error);
+  }
+
+  mj_value_free(value);
+  mj_env_free(env_result.env);
+}
+
+TEST(EnvTest, RenderNamedStringWithExistingTemplates) {
+  // Test that named string rendering doesn't interfere with existing templates
+  auto env_result = mj_env_new();
+  ASSERT_NE(env_result.env, nullptr);
+
+  // Add a template to the environment
+  auto add_result = mj_env_add_template(env_result.env, "existing_template", "Existing: {{ name }}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  auto value = mj_value_new();
+  ASSERT_NE(value, nullptr);
+  mj_value_set_string(value, "name", "Test");
+
+  // Render existing template
+  auto render_result1 = mj_env_render_template(env_result.env, "existing_template", value);
+  EXPECT_EQ(render_result1.error, nullptr);
+  EXPECT_STREQ(render_result1.result, "Existing: Test");
+  mj_str_free(render_result1.result);
+
+  // Render named string with same name but different content
+  auto render_result2 = mj_env_render_named_string(env_result.env, "existing_template",
+                                                   "Named: {{ name }}", value);
+  EXPECT_EQ(render_result2.error, nullptr);
+  EXPECT_STREQ(render_result2.result, "Named: Test");
+  mj_str_free(render_result2.result);
+
+  // Verify existing template is still intact
+  auto render_result3 = mj_env_render_template(env_result.env, "existing_template", value);
+  EXPECT_EQ(render_result3.error, nullptr);
+  EXPECT_STREQ(render_result3.result, "Existing: Test");
+  mj_str_free(render_result3.result);
+
+  // Render named string with different name
+  auto render_result4 = mj_env_render_named_string(env_result.env, "inline_template",
+                                                   "Inline: {{ name }}", value);
+  EXPECT_EQ(render_result4.error, nullptr);
+  EXPECT_STREQ(render_result4.result, "Inline: Test");
+  mj_str_free(render_result4.result);
 
   mj_value_free(value);
   mj_env_free(env_result.env);

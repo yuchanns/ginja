@@ -11,10 +11,12 @@ mod result;
 mod types;
 
 pub use result::mj_result_env_add_template;
+pub use result::mj_result_env_eval_expr;
 pub use result::mj_result_env_new;
 pub use result::mj_result_env_render_template;
 
 pub use env::mj_env;
 pub use errors::mj_error;
 
+pub use types::mj_undefined_behavior;
 pub use types::mj_value;

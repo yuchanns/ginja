@@ -7,7 +7,7 @@ use minijinja::Value;
 
 #[repr(C)]
 pub struct mj_value {
-    inner: *mut c_void,
+    pub(crate) inner: *mut c_void,
 }
 
 impl mj_value {
@@ -177,4 +177,14 @@ impl mj_value {
     ) {
         unsafe { self.set_list(key, val, len) }
     }
+}
+
+#[repr(C)]
+pub enum mj_undefined_behavior {
+    /// The default, somewhat lenient undefined behavior.
+    MJ_UNDEFINED_BEHAVIOR_LENIENT,
+    /// Complains very quickly about undefined values.
+    MJ_UNDEFINED_BEHAVIOR_STRICT,
+    /// Like Lenient, but also allows chaining of undefined lookups.
+    MJ_UNDEFINED_BEHAVIOR_CHAINABLE,
 }

@@ -48,6 +48,21 @@ typedef enum mj_code {
   MJ_UNKNOWN_BLOCK,
 } mj_code;
 
+typedef enum mj_undefined_behavior {
+  /**
+   * The default, somewhat lenient undefined behavior.
+   */
+  MJ_UNDEFINED_BEHAVIOR_LENIENT,
+  /**
+   * Complains very quickly about undefined values.
+   */
+  MJ_UNDEFINED_BEHAVIOR_STRICT,
+  /**
+   * Like Lenient, but also allows chaining of undefined lookups.
+   */
+  MJ_UNDEFINED_BEHAVIOR_CHAINABLE,
+} mj_undefined_behavior;
+
 typedef struct mj_env {
   void *inner;
 } mj_env;
@@ -86,9 +101,32 @@ struct mj_result_env_add_template mj_env_add_template(struct mj_env *env,
                                                       const char *name,
                                                       const char *source);
 
+void mj_env_remove_template(struct mj_env *env, const char *name);
+
+void mj_env_clear_templates(struct mj_env *env);
+
 struct mj_result_env_render_template mj_env_render_template(struct mj_env *env,
                                                             const char *name,
                                                             const struct mj_value *value);
+
+struct mj_result_env_render_template mj_env_render_named_string(struct mj_env *env,
+                                                                const char *name,
+                                                                const char *source,
+                                                                const struct mj_value *value);
+
+void mj_env_set_lstrip_blocks(struct mj_env *env, bool value);
+
+void mj_env_set_trim_blocks(struct mj_env *env, bool value);
+
+void mj_env_set_keep_trailing_newline(struct mj_env *env, bool value);
+
+void mj_env_set_recursion_limit(struct mj_env *env, uintptr_t value);
+
+void mj_env_set_debug(struct mj_env *env, bool value);
+
+void mj_env_set_undefined_behavior(struct mj_env *env, enum mj_undefined_behavior behavior);
+
+void mj_str_free(char *ptr);
 
 void mj_error_free(const struct mj_error *ptr);
 
