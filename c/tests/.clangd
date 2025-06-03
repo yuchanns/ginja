@@ -1,0 +1,7 @@
+# .clangd
+CompileFlags:
+  Add:
+    - -I../include
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
