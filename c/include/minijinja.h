@@ -98,6 +98,16 @@ void mj_value_free(struct mj_value *ptr);
 
 void mj_value_set_string(struct mj_value *self, const char *key, const char *val);
 
+void mj_value_set_int(struct mj_value *self, const char *key, int64_t val);
+
+void mj_value_set_in32(struct mj_value *self, const char *key, int32_t val);
+
+void mj_value_set_float(struct mj_value *self, const char *key, double val);
+
+void mj_value_set_float32(struct mj_value *self, const char *key, float val);
+
+void mj_value_set_bool(struct mj_value *self, const char *key, bool val);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

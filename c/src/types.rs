@@ -60,4 +60,59 @@ impl mj_value {
         };
         self.deref_mut().insert(key.into(), val.into());
     }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_int(&mut self, key: *const c_char, val: i64) {
+        assert!(!key.is_null());
+        let key = unsafe {
+            std::ffi::CStr::from_ptr(key)
+                .to_str()
+                .expect("malformed key")
+        };
+        self.deref_mut().insert(key.into(), Value::from(val));
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_in32(&mut self, key: *const c_char, val: i32) {
+        assert!(!key.is_null());
+        let key = unsafe {
+            std::ffi::CStr::from_ptr(key)
+                .to_str()
+                .expect("malformed key")
+        };
+        self.deref_mut().insert(key.into(), Value::from(val));
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_float(&mut self, key: *const c_char, val: f64) {
+        assert!(!key.is_null());
+        let key = unsafe {
+            std::ffi::CStr::from_ptr(key)
+                .to_str()
+                .expect("malformed key")
+        };
+        self.deref_mut().insert(key.into(), Value::from(val));
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_float32(&mut self, key: *const c_char, val: f32) {
+        assert!(!key.is_null());
+        let key = unsafe {
+            std::ffi::CStr::from_ptr(key)
+                .to_str()
+                .expect("malformed key")
+        };
+        self.deref_mut().insert(key.into(), Value::from(val));
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_bool(&mut self, key: *const c_char, val: bool) {
+        assert!(!key.is_null());
+        let key = unsafe {
+            std::ffi::CStr::from_ptr(key)
+                .to_str()
+                .expect("malformed key")
+        };
+        self.deref_mut().insert(key.into(), Value::from(val));
+    }
 }
