@@ -108,6 +108,28 @@ void mj_value_set_float32(struct mj_value *self, const char *key, float val);
 
 void mj_value_set_bool(struct mj_value *self, const char *key, bool val);
 
+void mj_value_set_list_string(struct mj_value *self,
+                              const char *key,
+                              const char *const *val,
+                              uintptr_t len);
+
+void mj_value_set_list_int(struct mj_value *self,
+                           const char *key,
+                           const int64_t *val,
+                           uintptr_t len);
+
+void mj_value_set_list_int32(struct mj_value *self,
+                             const char *key,
+                             const int32_t *val,
+                             uintptr_t len);
+
+void mj_value_set_list_float(struct mj_value *self,
+                             const char *key,
+                             const double *val,
+                             uintptr_t len);
+
+void mj_value_set_list_bool(struct mj_value *self, const char *key, const bool *val, uintptr_t len);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
