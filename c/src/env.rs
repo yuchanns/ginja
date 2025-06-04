@@ -4,8 +4,21 @@ use minijinja::{Environment, UndefinedBehavior};
 
 use super::*;
 
+/// \brief Represents a MiniJinja template environment that manages templates
+/// and their rendering configuration.
+///
+/// @see mj_env_new This function constructs a new environment
+/// @see mj_env_free This function frees the heap memory of the environment
+///
+/// \note The mj_env actually owns a pointer to a minijinja::Environment,
+/// which is inside the Rust core code.
+///
+/// \remark You may use the field `inner` to check whether this is a NULL
+/// environment.
 #[repr(C)]
 pub struct mj_env {
+    /// The pointer to the minijinja::Environment in the Rust code.
+    /// Only touch this on judging whether it is NULL.
     pub inner: *mut c_void,
 }
 
@@ -27,6 +40,16 @@ impl mj_env {
     }
 }
 
+/// \brief Creates a new MiniJinja template environment.
+///
+/// This function allocates and initializes a new MiniJinja environment
+/// that can be used to manage templates and render them with context data.
+///
+/// @return mj_result_env_new A result structure containing the newly created
+/// environment or error information if creation fails.
+///
+/// \note The returned environment should be freed using mj_env_free when
+/// no longer needed to prevent memory leaks.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_new() -> mj_result_env_new {
     let env = Environment::new();
@@ -37,6 +60,19 @@ pub unsafe extern "C" fn mj_env_new() -> mj_result_env_new {
     }
 }
 
+/// \brief Adds a template to the environment with the given name and source code.
+///
+/// This function compiles and stores a template in the environment so it can
+/// be rendered later using mj_env_render_template.
+///
+/// @param env Pointer to the environment to add the template to
+/// @param name Null-terminated string containing the name of the template
+/// @param source Null-terminated string containing the template source code
+///
+/// @return mj_result_env_add_template A result structure indicating success
+/// or containing error information if compilation fails.
+///
+/// \note Both name and source parameters must not be NULL.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_add_template(
     env: *mut mj_env,
@@ -66,6 +102,15 @@ pub unsafe extern "C" fn mj_env_add_template(
     }
 }
 
+/// \brief Removes a template from the environment by name.
+///
+/// This function removes a previously added template from the environment.
+/// After removal, the template can no longer be rendered.
+///
+/// @param env Pointer to the environment to remove the template from
+/// @param name Null-terminated string containing the name of the template to remove
+///
+/// \note The name parameter must not be NULL.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_remove_template(env: *mut mj_env, name: *const c_char) {
     assert!(!name.is_null());
@@ -78,12 +123,32 @@ pub unsafe extern "C" fn mj_env_remove_template(env: *mut mj_env, name: *const c
     env.remove_template(name);
 }
 
+/// \brief Clears all templates from the environment.
+///
+/// This function removes all previously added templates from the environment.
+/// After clearing, no templates can be rendered until new ones are added.
+///
+/// @param env Pointer to the environment to clear templates from
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_clear_templates(env: *mut mj_env) {
     let env = unsafe { &mut *env }.deref_mut();
     env.clear_templates();
 }
 
+/// \brief Renders a template by name with the provided context value.
+///
+/// This function retrieves a previously added template by name and renders it
+/// using the provided context value.
+///
+/// @param env Pointer to the environment containing the template
+/// @param name Null-terminated string containing the name of the template to render
+/// @param value Pointer to the context value to use for rendering
+///
+/// @return mj_result_env_render_template A result structure containing the
+/// rendered string or error information if rendering fails.
+///
+/// \note The name parameter must not be NULL. The returned string should be
+/// freed using mj_str_free when no longer needed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_render_template(
     env: *mut mj_env,
@@ -121,6 +186,21 @@ pub unsafe extern "C" fn mj_env_render_template(
     }
 }
 
+/// \brief Renders a template from source code without storing it in the environment.
+///
+/// This function renders a template directly from source code using the provided
+/// context value, without permanently adding it to the environment.
+///
+/// @param env Pointer to the environment to use for rendering
+/// @param name Null-terminated string containing the name for the template (used for error reporting)
+/// @param source Null-terminated string containing the template source code
+/// @param value Pointer to the context value to use for rendering
+///
+/// @return mj_result_env_render_template A result structure containing the
+/// rendered string or error information if rendering fails.
+///
+/// \note All parameters must not be NULL. The returned string should be
+/// freed using mj_str_free when no longer needed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_render_named_string(
     env: *mut mj_env,
@@ -155,36 +235,78 @@ pub unsafe extern "C" fn mj_env_render_named_string(
     }
 }
 
+/// \brief Sets whether to strip leading whitespace from blocks.
+///
+/// This function configures the environment to automatically strip leading
+/// whitespace from template blocks when enabled.
+///
+/// @param env Pointer to the environment to configure
+/// @param value Boolean value indicating whether to enable lstrip blocks
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_lstrip_blocks(env: *mut mj_env, value: bool) {
     let env = unsafe { &mut *env }.deref_mut();
     env.set_lstrip_blocks(value);
 }
 
+/// \brief Sets whether to strip trailing whitespace from blocks.
+///
+/// This function configures the environment to automatically strip trailing
+/// whitespace from template blocks when enabled.
+///
+/// @param env Pointer to the environment to configure
+/// @param value Boolean value indicating whether to enable trim blocks
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_trim_blocks(env: *mut mj_env, value: bool) {
     let env = unsafe { &mut *env }.deref_mut();
     env.set_trim_blocks(value);
 }
 
+/// \brief Sets whether to keep trailing newlines in template output.
+///
+/// This function configures the environment to keep or remove trailing
+/// newlines in the rendered template output.
+///
+/// @param env Pointer to the environment to configure
+/// @param value Boolean value indicating whether to keep trailing newlines
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_keep_trailing_newline(env: *mut mj_env, value: bool) {
     let env = unsafe { &mut *env }.deref_mut();
     env.set_keep_trailing_newline(value);
 }
 
+/// \brief Sets the maximum recursion depth for template rendering.
+///
+/// This function configures the maximum depth of recursive template calls
+/// to prevent infinite recursion and stack overflow.
+///
+/// @param env Pointer to the environment to configure
+/// @param value Maximum recursion depth allowed
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_recursion_limit(env: *mut mj_env, value: usize) {
     let env = unsafe { &mut *env }.deref_mut();
     env.set_recursion_limit(value);
 }
 
+/// \brief Sets whether to enable debug mode for template rendering.
+///
+/// This function configures the environment to enable or disable debug mode,
+/// which affects error reporting and template debugging capabilities.
+///
+/// @param env Pointer to the environment to configure
+/// @param value Boolean value indicating whether to enable debug mode
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_debug(env: *mut mj_env, value: bool) {
     let env = unsafe { &mut *env }.deref_mut();
     env.set_debug(value);
 }
 
+/// \brief Sets the undefined behavior policy for the environment.
+///
+/// This function configures how the environment handles undefined variables
+/// and expressions in templates.
+///
+/// @param env Pointer to the environment to configure
+/// @param behavior The undefined behavior policy to set
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_undefined_behavior(
     env: *mut mj_env,
@@ -199,6 +321,15 @@ pub unsafe extern "C" fn mj_env_set_undefined_behavior(
     env.set_undefined_behavior(behavior);
 }
 
+/// \brief Frees a C string returned by MiniJinja functions.
+///
+/// This function properly deallocates C strings that were allocated by
+/// MiniJinja C API functions, such as rendered template output.
+///
+/// @param ptr Pointer to the C string to free
+///
+/// \note It is safe to pass NULL to this function.
+/// \note Only use this function on strings returned by MiniJinja C API functions.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_str_free(ptr: *mut c_char) {
     if ptr.is_null() {
