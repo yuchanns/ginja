@@ -21,7 +21,7 @@ impl mj_value {
 
     unsafe fn set<T>(&mut self, key: *const c_char, val: T)
     where
-        T: Copy + Into<Value>,
+        T: Clone + Into<Value>,
     {
         assert!(!key.is_null());
         let key = unsafe {
@@ -34,22 +34,16 @@ impl mj_value {
 
     unsafe fn set_list<T>(&mut self, key: *const c_char, val: *const T, len: usize)
     where
-        T: Copy + Into<Value>,
+        T: Clone + Into<Value>,
     {
-        assert!(!key.is_null());
         assert!(!val.is_null());
-        let key = unsafe {
-            std::ffi::CStr::from_ptr(key)
-                .to_str()
-                .expect("malformed key")
-        };
         let list: Vec<Value> = (0..len)
             .map(|i| {
-                let item = unsafe { *val.add(i) };
+                let item = unsafe { (*val.add(i)).clone() };
                 item.into()
             })
             .collect();
-        self.deref_mut().insert(key.into(), Value::from(list));
+        unsafe { self.set(key, list) }
     }
 }
 
@@ -71,6 +65,17 @@ impl mj_value {
             }
             drop(Box::from_raw((*ptr).inner as *mut HashMap<String, Value>));
         }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_value(
+        &mut self,
+        key: *const c_char,
+        val: *const mj_value,
+    ) {
+        assert!(!val.is_null());
+        let val = unsafe { &*val }.deref().clone();
+        unsafe { self.set(key, val) }
     }
 
     #[unsafe(no_mangle)]
@@ -114,19 +119,30 @@ impl mj_value {
     }
 
     #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_value(
+        &mut self,
+        key: *const c_char,
+        val: *const *const mj_value,
+        len: usize,
+    ) {
+        assert!(!val.is_null());
+        let list: Vec<Value> = (0..len)
+            .map(|i| {
+                let item = unsafe { &*(*val.add(i)) }.deref().clone();
+                item.into()
+            })
+            .collect();
+        unsafe { self.set(key, list) }
+    }
+
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_string(
         &mut self,
         key: *const c_char,
         val: *const *const c_char,
         len: usize,
     ) {
-        assert!(!key.is_null());
         assert!(!val.is_null());
-        let key = unsafe {
-            std::ffi::CStr::from_ptr(key)
-                .to_str()
-                .expect("malformed key")
-        };
         let list: Vec<String> = (0..len)
             .map(|i| {
                 let item = unsafe { std::ffi::CStr::from_ptr(*val.add(i)) }
@@ -135,7 +151,7 @@ impl mj_value {
                 item.into()
             })
             .collect();
-        self.deref_mut().insert(key.into(), list.into());
+        unsafe { self.set(key, list) }
     }
 
     #[unsafe(no_mangle)]
@@ -163,6 +179,16 @@ impl mj_value {
         &mut self,
         key: *const c_char,
         val: *const f64,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_float32(
+        &mut self,
+        key: *const c_char,
+        val: *const f32,
         len: usize,
     ) {
         unsafe { self.set_list(key, val, len) }

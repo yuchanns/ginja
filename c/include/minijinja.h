@@ -134,6 +134,8 @@ struct mj_value *mj_value_new(void);
 
 void mj_value_free(struct mj_value *ptr);
 
+void mj_value_set_value(struct mj_value *self, const char *key, const struct mj_value *val);
+
 void mj_value_set_string(struct mj_value *self, const char *key, const char *val);
 
 void mj_value_set_int(struct mj_value *self, const char *key, int64_t val);
@@ -145,6 +147,11 @@ void mj_value_set_float(struct mj_value *self, const char *key, double val);
 void mj_value_set_float32(struct mj_value *self, const char *key, float val);
 
 void mj_value_set_bool(struct mj_value *self, const char *key, bool val);
+
+void mj_value_set_list_value(struct mj_value *self,
+                             const char *key,
+                             const struct mj_value *const *val,
+                             uintptr_t len);
 
 void mj_value_set_list_string(struct mj_value *self,
                               const char *key,
@@ -165,6 +172,11 @@ void mj_value_set_list_float(struct mj_value *self,
                              const char *key,
                              const double *val,
                              uintptr_t len);
+
+void mj_value_set_list_float32(struct mj_value *self,
+                               const char *key,
+                               const float *val,
+                               uintptr_t len);
 
 void mj_value_set_list_bool(struct mj_value *self, const char *key, const bool *val, uintptr_t len);
 
