@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ..
+          cmake .. -DTEST_ENABLE_ASAN=ON
           make -j$(nproc) tests
       - name: Run Tests
         working-directory: c/build
