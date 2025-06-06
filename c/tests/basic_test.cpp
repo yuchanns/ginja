@@ -11,7 +11,7 @@ TEST_F(MiniJinjaTest, MultipleValuesInTemplate) {
 
   // Set different types of values
   mj_value_set_string(value, "name", "Alice");
-  mj_value_set_in32(value, "age", 25);
+  mj_value_set_int32(value, "age", 25);
   mj_value_set_float32(value, "score", 95.5f);
   mj_value_set_bool(value, "active", true);
 

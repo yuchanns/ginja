@@ -301,7 +301,19 @@ void mj_value_set_string(struct mj_value *self, const char *key, const char *val
 
 void mj_value_set_int(struct mj_value *self, const char *key, int64_t val);
 
-void mj_value_set_in32(struct mj_value *self, const char *key, int32_t val);
+void mj_value_set_int32(struct mj_value *self, const char *key, int32_t val);
+
+void mj_value_set_int16(struct mj_value *self, const char *key, int16_t val);
+
+void mj_value_set_int8(struct mj_value *self, const char *key, int8_t val);
+
+void mj_value_set_uint(struct mj_value *self, const char *key, uint64_t val);
+
+void mj_value_set_uint32(struct mj_value *self, const char *key, uint32_t val);
+
+void mj_value_set_uint16(struct mj_value *self, const char *key, uint16_t val);
+
+void mj_value_set_uint8(struct mj_value *self, const char *key, uint8_t val);
 
 void mj_value_set_float(struct mj_value *self, const char *key, double val);
 
@@ -327,6 +339,36 @@ void mj_value_set_list_int(struct mj_value *self,
 void mj_value_set_list_int32(struct mj_value *self,
                              const char *key,
                              const int32_t *val,
+                             uintptr_t len);
+
+void mj_value_set_list_int16(struct mj_value *self,
+                             const char *key,
+                             const int16_t *val,
+                             uintptr_t len);
+
+void mj_value_set_list_int8(struct mj_value *self,
+                            const char *key,
+                            const int8_t *val,
+                            uintptr_t len);
+
+void mj_value_set_list_uint(struct mj_value *self,
+                            const char *key,
+                            const uint64_t *val,
+                            uintptr_t len);
+
+void mj_value_set_list_uint32(struct mj_value *self,
+                              const char *key,
+                              const uint32_t *val,
+                              uintptr_t len);
+
+void mj_value_set_list_uint16(struct mj_value *self,
+                              const char *key,
+                              const uint16_t *val,
+                              uintptr_t len);
+
+void mj_value_set_list_uint8(struct mj_value *self,
+                             const char *key,
+                             const uint8_t *val,
                              uintptr_t len);
 
 void mj_value_set_list_float(struct mj_value *self,

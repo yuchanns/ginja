@@ -100,7 +100,37 @@ impl mj_value {
     }
 
     #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn mj_value_set_in32(&mut self, key: *const c_char, val: i32) {
+    pub unsafe extern "C" fn mj_value_set_int32(&mut self, key: *const c_char, val: i32) {
+        unsafe { self.set(key, val) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_int16(&mut self, key: *const c_char, val: i16) {
+        unsafe { self.set(key, val) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_int8(&mut self, key: *const c_char, val: i8) {
+        unsafe { self.set(key, val) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_uint(&mut self, key: *const c_char, val: u64) {
+        unsafe { self.set(key, val) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_uint32(&mut self, key: *const c_char, val: u32) {
+        unsafe { self.set(key, val) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_uint16(&mut self, key: *const c_char, val: u16) {
+        unsafe { self.set(key, val) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_uint8(&mut self, key: *const c_char, val: u8) {
         unsafe { self.set(key, val) }
     }
 
@@ -170,6 +200,66 @@ impl mj_value {
         &mut self,
         key: *const c_char,
         val: *const i32,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_int16(
+        &mut self,
+        key: *const c_char,
+        val: *const i16,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_int8(
+        &mut self,
+        key: *const c_char,
+        val: *const i8,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_uint(
+        &mut self,
+        key: *const c_char,
+        val: *const u64,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_uint32(
+        &mut self,
+        key: *const c_char,
+        val: *const u32,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_uint16(
+        &mut self,
+        key: *const c_char,
+        val: *const u16,
+        len: usize,
+    ) {
+        unsafe { self.set_list(key, val, len) }
+    }
+
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_list_uint8(
+        &mut self,
+        key: *const c_char,
+        val: *const u8,
         len: usize,
     ) {
         unsafe { self.set_list(key, val, len) }

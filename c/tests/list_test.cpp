@@ -311,3 +311,194 @@ TEST_F(MiniJinjaTest, SetListWithNestedValues) {
   mj_value_free(user1);
   mj_value_free(user2);
 }
+
+TEST_F(MiniJinjaTest, SetListInt8Values) {
+  // Test setting 8-bit integer list values
+  auto add_result =
+      mj_env_add_template(env, "list_int8_template",
+                          "Values: {% for val in values %}{{ val }}{% if not "
+                          "loop.last %}, {% endif %}{% endfor %}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Test mj_value_set_list_int8
+  int8_t int8_list[] = {-128, -50, 0, 50, 127};
+  mj_value_set_list_int8(value, "values", int8_list, 5);
+
+  auto render_result = mj_env_render_template(env, "list_int8_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(render_result.result, "Values: -128, -50, 0, 50, 127");
+  mj_str_free(render_result.result);
+}
+
+TEST_F(MiniJinjaTest, SetListUintValues) {
+  // Test setting 64-bit unsigned integer list values
+  auto add_result =
+      mj_env_add_template(env, "list_uint_template",
+                          "Values: {% for val in values %}{{ val }}{% if not "
+                          "loop.last %}, {% endif %}{% endfor %}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Test mj_value_set_list_uint
+  uint64_t uint_list[] = {0, 1000000000000ULL, 9223372036854775808ULL,
+                          18446744073709551615ULL};
+  mj_value_set_list_uint(value, "values", uint_list, 4);
+
+  auto render_result = mj_env_render_template(env, "list_uint_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(
+      render_result.result,
+      "Values: 0, 1000000000000, 9223372036854775808, 18446744073709551615");
+  mj_str_free(render_result.result);
+}
+
+TEST_F(MiniJinjaTest, SetListUint32Values) {
+  // Test setting 32-bit unsigned integer list values
+  auto add_result =
+      mj_env_add_template(env, "list_uint32_template",
+                          "Values: {% for val in values %}{{ val }}{% if not "
+                          "loop.last %}, {% endif %}{% endfor %}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Test mj_value_set_list_uint32
+  uint32_t uint32_list[] = {0, 1000000, 2147483648U, 4294967295U};
+  mj_value_set_list_uint32(value, "values", uint32_list, 4);
+
+  auto render_result =
+      mj_env_render_template(env, "list_uint32_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(render_result.result,
+               "Values: 0, 1000000, 2147483648, 4294967295");
+  mj_str_free(render_result.result);
+}
+
+TEST_F(MiniJinjaTest, SetListUint16Values) {
+  // Test setting 16-bit unsigned integer list values
+  auto add_result =
+      mj_env_add_template(env, "list_uint16_template",
+                          "Values: {% for val in values %}{{ val }}{% if not "
+                          "loop.last %}, {% endif %}{% endfor %}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Test mj_value_set_list_uint16
+  uint16_t uint16_list[] = {0, 1000, 32768, 65535};
+  mj_value_set_list_uint16(value, "values", uint16_list, 4);
+
+  auto render_result =
+      mj_env_render_template(env, "list_uint16_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(render_result.result, "Values: 0, 1000, 32768, 65535");
+  mj_str_free(render_result.result);
+}
+
+TEST_F(MiniJinjaTest, SetListUint8Values) {
+  // Test setting 8-bit unsigned integer list values
+  auto add_result =
+      mj_env_add_template(env, "list_uint8_template",
+                          "Values: {% for val in values %}{{ val }}{% if not "
+                          "loop.last %}, {% endif %}{% endfor %}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Test mj_value_set_list_uint8
+  uint8_t uint8_list[] = {0, 50, 128, 200, 255};
+  mj_value_set_list_uint8(value, "values", uint8_list, 5);
+
+  auto render_result =
+      mj_env_render_template(env, "list_uint8_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(render_result.result, "Values: 0, 50, 128, 200, 255");
+  mj_str_free(render_result.result);
+}
+
+// Test mixing different list types
+TEST_F(MiniJinjaTest, SetMixedListTypes) {
+  auto add_result = mj_env_add_template(
+      env, "mixed_list_template",
+      "int8: {{ i8_list|length }}, uint8: {{ u8_list|length }}, "
+      "int16: {{ i16_list|length }}, uint16: {{ u16_list|length }}, "
+      "uint32: {{ u32_list|length }}, uint64: {{ u64_list|length }}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Set different list types
+  int8_t i8_vals[] = {-1, 0, 1};
+  uint8_t u8_vals[] = {0, 100, 255};
+  int16_t i16_vals[] = {-1000, 0, 1000};
+  uint16_t u16_vals[] = {0, 30000, 65535};
+  uint32_t u32_vals[] = {0, 2000000000U, 4294967295U};
+  uint64_t u64_vals[] = {0, 10000000000ULL, 18446744073709551615ULL};
+
+  mj_value_set_list_int8(value, "i8_list", i8_vals, 3);
+  mj_value_set_list_uint8(value, "u8_list", u8_vals, 3);
+  mj_value_set_list_int16(value, "i16_list", i16_vals, 3);
+  mj_value_set_list_uint16(value, "u16_list", u16_vals, 3);
+  mj_value_set_list_uint32(value, "u32_list", u32_vals, 3);
+  mj_value_set_list_uint(value, "u64_list", u64_vals, 3);
+
+  auto render_result =
+      mj_env_render_template(env, "mixed_list_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(render_result.result,
+               "int8: 3, uint8: 3, int16: 3, uint16: 3, uint32: 3, uint64: 3");
+  mj_str_free(render_result.result);
+}
+
+// Test edge cases with empty lists for new types
+TEST_F(MiniJinjaTest, SetEmptyListsForNewTypes) {
+  auto add_result = mj_env_add_template(
+      env, "empty_lists_template",
+      "{% if int8_list %}Not empty{% else %}Empty{% endif %} - "
+      "{% if uint8_list %}Not empty{% else %}Empty{% endif %} - "
+      "{% if int16_list %}Not empty{% else %}Empty{% endif %} - "
+      "{% if uint16_list %}Not empty{% else %}Empty{% endif %} - "
+      "{% if uint32_list %}Not empty{% else %}Empty{% endif %} - "
+      "{% if uint64_list %}Not empty{% else %}Empty{% endif %}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Set empty lists for all new types
+  int8_t empty_i8[1] = {0};
+  uint8_t empty_u8[1] = {0};
+  int16_t empty_i16[1] = {0};
+  uint16_t empty_u16[1] = {0};
+  uint32_t empty_u32[1] = {0};
+  uint64_t empty_u64[1] = {0};
+
+  mj_value_set_list_int8(value, "int8_list", empty_i8, 0);
+  mj_value_set_list_uint8(value, "uint8_list", empty_u8, 0);
+  mj_value_set_list_int16(value, "int16_list", empty_i16, 0);
+  mj_value_set_list_uint16(value, "uint16_list", empty_u16, 0);
+  mj_value_set_list_uint32(value, "uint32_list", empty_u32, 0);
+  mj_value_set_list_uint(value, "uint64_list", empty_u64, 0);
+
+  auto render_result =
+      mj_env_render_template(env, "empty_lists_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(render_result.result,
+               "Empty - Empty - Empty - Empty - Empty - Empty");
+  mj_str_free(render_result.result);
+}
+
+// Test boundary values for all integer types
+TEST_F(MiniJinjaTest, SetBoundaryValues) {
+  auto add_result = mj_env_add_template(env, "boundary_template",
+                                        "int8: {{ i8_min }}, {{ i8_max }}; "
+                                        "uint8: {{ u8_min }}, {{ u8_max }}; "
+                                        "int16: {{ i16_min }}, {{ i16_max }}; "
+                                        "uint16: {{ u16_min }}, {{ u16_max }}");
+  EXPECT_EQ(add_result.error, nullptr);
+
+  // Set boundary values
+  mj_value_set_int8(value, "i8_min", INT8_MIN);
+  mj_value_set_int8(value, "i8_max", INT8_MAX);
+  mj_value_set_uint8(value, "u8_min", 0);
+  mj_value_set_uint8(value, "u8_max", UINT8_MAX);
+  mj_value_set_int16(value, "i16_min", INT16_MIN);
+  mj_value_set_int16(value, "i16_max", INT16_MAX);
+  mj_value_set_uint16(value, "u16_min", 0);
+  mj_value_set_uint16(value, "u16_max", UINT16_MAX);
+
+  auto render_result = mj_env_render_template(env, "boundary_template", value);
+  EXPECT_EQ(render_result.error, nullptr);
+  EXPECT_STREQ(
+      render_result.result,
+      "int8: -128, 127; uint8: 0, 255; int16: -32768, 32767; uint16: 0, 65535");
+  mj_str_free(render_result.result);
+}
