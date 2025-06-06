@@ -30,12 +30,13 @@ impl mj_env {
 
 impl mj_env {
     #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn mj_env_free(ptr: *const mj_env) {
+    pub unsafe extern "C" fn mj_env_free(ptr: *mut mj_env) {
         unsafe {
             if ptr.is_null() {
                 return;
             }
             drop(Box::from_raw((*ptr).inner as *mut Environment));
+            drop(Box::from_raw(ptr));
         }
     }
 }

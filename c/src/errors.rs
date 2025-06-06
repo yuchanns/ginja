@@ -81,12 +81,13 @@ impl mj_error {
     }
 
     #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn mj_error_free(ptr: *const mj_error) {
+    pub unsafe extern "C" fn mj_error_free(ptr: *mut mj_error) {
         if ptr.is_null() {
             return;
         }
         unsafe {
-            drop(Box::from_raw(ptr as *mut mj_error));
+            drop(Box::from_raw((*ptr).message as *mut c_char));
+            drop(Box::from_raw(ptr));
         }
     }
 }

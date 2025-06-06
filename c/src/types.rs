@@ -64,6 +64,7 @@ impl mj_value {
                 return;
             }
             drop(Box::from_raw((*ptr).inner as *mut HashMap<String, Value>));
+            drop(Box::from_raw(ptr));
         }
     }
 

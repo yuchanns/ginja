@@ -110,7 +110,7 @@ typedef struct mj_value {
 extern "C" {
 #endif // __cplusplus
 
-void mj_env_free(const struct mj_env *ptr);
+void mj_env_free(struct mj_env *ptr);
 
 /**
  * \brief Creates a new MiniJinja template environment.
@@ -289,7 +289,7 @@ void mj_env_set_undefined_behavior(struct mj_env *env, enum mj_undefined_behavio
  */
 void mj_str_free(char *ptr);
 
-void mj_error_free(const struct mj_error *ptr);
+void mj_error_free(struct mj_error *ptr);
 
 struct mj_value *mj_value_new(void);
 
