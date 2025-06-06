@@ -25,26 +25,98 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+/**
+ * \brief Represents error codes for different types of MiniJinja errors.
+ *
+ * This enumeration defines all possible error conditions that can occur
+ * during template compilation, rendering, and value operations in MiniJinja.
+ * Each error code corresponds to a specific error kind from the core MiniJinja library.
+ *
+ * @see mj_error This structure contains both the error code and message
+ *
+ * \note These error codes are C-compatible and can be used for error handling
+ * in C/C++ applications.
+ */
 typedef enum mj_code {
+  /**
+   * Error when attempting to use a non-primitive value where a primitive is expected
+   */
   MJ_NON_PRIMITIVE,
+  /**
+   * Error when attempting to use a non-key value as a map key
+   */
   MJ_NON_KEY,
+  /**
+   * Error when attempting an invalid operation on a value
+   */
   MJ_INVALID_OPERATION,
+  /**
+   * Syntax error in template source code
+   */
   MJ_SYNTAX_ERROR,
+  /**
+   * Template with the specified name was not found
+   */
   MJ_TEMPLATE_NOT_FOUND,
+  /**
+   * Too many arguments provided to a function, filter, or test
+   */
   MJ_TOO_MANY_ARGUMENTS,
+  /**
+   * Required argument is missing from a function, filter, or test call
+   */
   MJ_MISSING_ARGUMENT,
+  /**
+   * Unknown or undefined filter used in template
+   */
   MJ_UNKNOWN_FILTER,
+  /**
+   * Unknown or undefined test used in template
+   */
   MJ_UNKNOWN_TEST,
+  /**
+   * Unknown or undefined function used in template
+   */
   MJ_UNKNOWN_FUNCTION,
+  /**
+   * Unknown or undefined method called on a value
+   */
   MJ_UNKNOWN_METHOD,
+  /**
+   * Invalid escape sequence in template
+   */
   MJ_BAD_ESCAPE,
+  /**
+   * Undefined variable or expression accessed in template
+   */
   MJ_UNDEFINED_ERROR,
+  /**
+   * Error during value serialization
+   */
   MJ_BAD_SERIALIZATION,
+  /**
+   * Error during value deserialization
+   */
   MJ_CANNOT_DESERIALIZE,
+  /**
+   * Error in template include operation
+   */
   MJ_BAD_INCLUDE,
+  /**
+   * Error in template block evaluation
+   */
   MJ_EVAL_BLOCK,
+  /**
+   * Error when attempting to unpack a value
+   */
   MJ_CANNOT_UNPACK,
+  /**
+   * Error during template output writing
+   */
   MJ_WRITE_FAILURE,
+  /**
+   * Unknown or undefined block used in template
+   */
   MJ_UNKNOWN_BLOCK,
 } mj_code;
 
@@ -110,8 +182,30 @@ typedef struct mj_result_env_new {
   struct mj_env *env;
 } mj_result_env_new;
 
+/**
+ * \brief Represents a MiniJinja error with code and message information.
+ *
+ * This structure encapsulates error information from MiniJinja operations,
+ * including both an error code that categorizes the error type and a
+ * human-readable error message with full error chain details.
+ *
+ * @see mj_code The error code enumeration
+ * @see mj_error_free This function frees the heap memory of the error
+ *
+ * \note The mj_error structure owns the error message string, which must
+ * be freed using mj_error_free to prevent memory leaks.
+ *
+ * \remark The message field contains the complete error chain, including
+ * the root cause and all intermediate error causes.
+ */
 typedef struct mj_error {
+  /**
+   * The error code categorizing the type of error that occurred
+   */
   enum mj_code code;
+  /**
+   * Pointer to a null-terminated C string containing the error message
+   */
   const char *message;
 } mj_error;
 
@@ -361,6 +455,18 @@ void mj_env_set_undefined_behavior(struct mj_env *env, enum mj_undefined_behavio
  */
 void mj_str_free(char *ptr);
 
+/**
+ * \brief Frees the memory allocated for a MiniJinja error.
+ *
+ * This function properly deallocates both the error structure and its
+ * associated error message string, preventing memory leaks.
+ *
+ * @param ptr Pointer to the error structure to free
+ *
+ * \note It is safe to pass NULL to this function.
+ * \note Only use this function on error pointers returned by MiniJinja C API functions.
+ * \note After calling this function, the pointer becomes invalid and should not be used.
+ */
 void mj_error_free(struct mj_error *ptr);
 
 /**
@@ -431,18 +537,95 @@ void mj_value_set_string(struct mj_value *self, const char *key, const char *val
  */
 void mj_value_set_int(struct mj_value *self, const char *key, int64_t val);
 
+/**
+ * \brief Sets a 32-bit signed integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 32-bit signed integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 32-bit integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_int32(struct mj_value *self, const char *key, int32_t val);
 
+/**
+ * \brief Sets a 16-bit signed integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 16-bit signed integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 16-bit integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_int16(struct mj_value *self, const char *key, int16_t val);
 
+/**
+ * \brief Sets an 8-bit signed integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an 8-bit signed integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 8-bit integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_int8(struct mj_value *self, const char *key, int8_t val);
 
+/**
+ * \brief Sets a 64-bit unsigned integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 64-bit unsigned integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 64-bit unsigned integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_uint(struct mj_value *self, const char *key, uint64_t val);
 
+/**
+ * \brief Sets a 32-bit unsigned integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 32-bit unsigned integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 32-bit unsigned integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_uint32(struct mj_value *self, const char *key, uint32_t val);
 
+/**
+ * \brief Sets a 16-bit unsigned integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 16-bit unsigned integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 16-bit unsigned integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_uint16(struct mj_value *self, const char *key, uint16_t val);
 
+/**
+ * \brief Sets an 8-bit unsigned integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an 8-bit unsigned integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 8-bit unsigned integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_uint8(struct mj_value *self, const char *key, uint8_t val);
 
 /**
@@ -458,6 +641,17 @@ void mj_value_set_uint8(struct mj_value *self, const char *key, uint8_t val);
  */
 void mj_value_set_float(struct mj_value *self, const char *key, double val);
 
+/**
+ * \brief Sets a 32-bit floating-point value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 32-bit floating-point number.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The 32-bit floating-point value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_float32(struct mj_value *self, const char *key, float val);
 
 /**
@@ -511,56 +705,199 @@ void mj_value_set_list_string(struct mj_value *self,
                               const char *const *val,
                               uintptr_t len);
 
+/**
+ * \brief Sets an array of 64-bit signed integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 64-bit signed integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 64-bit signed integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len integers.
+ */
 void mj_value_set_list_int(struct mj_value *self,
                            const char *key,
                            const int64_t *val,
                            uintptr_t len);
 
+/**
+ * \brief Sets an array of 32-bit signed integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 32-bit signed integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 32-bit signed integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len integers.
+ */
 void mj_value_set_list_int32(struct mj_value *self,
                              const char *key,
                              const int32_t *val,
                              uintptr_t len);
 
+/**
+ * \brief Sets an array of 16-bit signed integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 16-bit signed integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 16-bit signed integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len integers.
+ */
 void mj_value_set_list_int16(struct mj_value *self,
                              const char *key,
                              const int16_t *val,
                              uintptr_t len);
 
+/**
+ * \brief Sets an array of 8-bit signed integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 8-bit signed integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 8-bit signed integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len integers.
+ */
 void mj_value_set_list_int8(struct mj_value *self,
                             const char *key,
                             const int8_t *val,
                             uintptr_t len);
 
+/**
+ * \brief Sets an array of 64-bit unsigned integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 64-bit unsigned integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 64-bit unsigned integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len unsigned integers.
+ */
 void mj_value_set_list_uint(struct mj_value *self,
                             const char *key,
                             const uint64_t *val,
                             uintptr_t len);
 
+/**
+ * \brief Sets an array of 32-bit unsigned integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 32-bit unsigned integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 32-bit unsigned integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len unsigned integers.
+ */
 void mj_value_set_list_uint32(struct mj_value *self,
                               const char *key,
                               const uint32_t *val,
                               uintptr_t len);
 
+/**
+ * \brief Sets an array of 16-bit unsigned integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 16-bit unsigned integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 16-bit unsigned integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len unsigned integers.
+ */
 void mj_value_set_list_uint16(struct mj_value *self,
                               const char *key,
                               const uint16_t *val,
                               uintptr_t len);
 
+/**
+ * \brief Sets an array of 8-bit unsigned integers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 8-bit unsigned integers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 8-bit unsigned integers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len unsigned integers.
+ */
 void mj_value_set_list_uint8(struct mj_value *self,
                              const char *key,
                              const uint8_t *val,
                              uintptr_t len);
 
+/**
+ * \brief Sets an array of 64-bit floating-point values as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 64-bit floating-point numbers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 64-bit floating-point values
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len floating-point values.
+ */
 void mj_value_set_list_float(struct mj_value *self,
                              const char *key,
                              const double *val,
                              uintptr_t len);
 
+/**
+ * \brief Sets an array of 32-bit floating-point values as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of 32-bit floating-point numbers.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of 32-bit floating-point values
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len floating-point values.
+ */
 void mj_value_set_list_float32(struct mj_value *self,
                                const char *key,
                                const float *val,
                                uintptr_t len);
 
+/**
+ * \brief Sets an array of boolean values as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of boolean values (true/false).
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of boolean values
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len boolean values.
+ */
 void mj_value_set_list_bool(struct mj_value *self, const char *key, const bool *val, uintptr_t len);
 
 #ifdef __cplusplus

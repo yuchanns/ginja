@@ -164,36 +164,99 @@ impl mj_value {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets a 32-bit signed integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is a 32-bit signed integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 32-bit integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_int32(&mut self, key: *const c_char, val: i32) {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets a 16-bit signed integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is a 16-bit signed integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 16-bit integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_int16(&mut self, key: *const c_char, val: i16) {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets an 8-bit signed integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an 8-bit signed integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 8-bit integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_int8(&mut self, key: *const c_char, val: i8) {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets a 64-bit unsigned integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is a 64-bit unsigned integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 64-bit unsigned integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_uint(&mut self, key: *const c_char, val: u64) {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets a 32-bit unsigned integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is a 32-bit unsigned integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 32-bit unsigned integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_uint32(&mut self, key: *const c_char, val: u32) {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets a 16-bit unsigned integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is a 16-bit unsigned integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 16-bit unsigned integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_uint16(&mut self, key: *const c_char, val: u16) {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets an 8-bit unsigned integer value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an 8-bit unsigned integer.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 8-bit unsigned integer value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_uint8(&mut self, key: *const c_char, val: u8) {
         unsafe { self.set(key, val) }
@@ -213,6 +276,15 @@ impl mj_value {
         unsafe { self.set(key, val) }
     }
 
+    /// \brief Sets a 32-bit floating-point value as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is a 32-bit floating-point number.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val The 32-bit floating-point value to set
+    ///
+    /// \note The key parameter must not be NULL.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_float32(&mut self, key: *const c_char, val: f32) {
         unsafe { self.set(key, val) }
@@ -292,6 +364,17 @@ impl mj_value {
         unsafe { self.set(key, list) }
     }
 
+    /// \brief Sets an array of 64-bit signed integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 64-bit signed integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 64-bit signed integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_int(
         &mut self,
@@ -302,6 +385,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 32-bit signed integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 32-bit signed integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 32-bit signed integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_int32(
         &mut self,
@@ -312,6 +406,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 16-bit signed integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 16-bit signed integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 16-bit signed integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_int16(
         &mut self,
@@ -322,6 +427,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 8-bit signed integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 8-bit signed integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 8-bit signed integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_int8(
         &mut self,
@@ -332,6 +448,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 64-bit unsigned integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 64-bit unsigned integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 64-bit unsigned integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len unsigned integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_uint(
         &mut self,
@@ -342,6 +469,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 32-bit unsigned integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 32-bit unsigned integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 32-bit unsigned integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len unsigned integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_uint32(
         &mut self,
@@ -352,6 +490,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 16-bit unsigned integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 16-bit unsigned integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 16-bit unsigned integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len unsigned integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_uint16(
         &mut self,
@@ -362,6 +511,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 8-bit unsigned integers as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 8-bit unsigned integers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 8-bit unsigned integers
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len unsigned integers.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_uint8(
         &mut self,
@@ -372,6 +532,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 64-bit floating-point values as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 64-bit floating-point numbers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 64-bit floating-point values
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len floating-point values.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_float(
         &mut self,
@@ -382,6 +553,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of 32-bit floating-point values as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of 32-bit floating-point numbers.
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of 32-bit floating-point values
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len floating-point values.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_float32(
         &mut self,
@@ -392,6 +574,17 @@ impl mj_value {
         unsafe { self.set_list(key, val, len) }
     }
 
+    /// \brief Sets an array of boolean values as a field in the value map.
+    ///
+    /// This function adds or updates a key-value pair in the value map where
+    /// the value is an array of boolean values (true/false).
+    ///
+    /// @param key Null-terminated string containing the key name
+    /// @param val Pointer to an array of boolean values
+    /// @param len Number of elements in the array
+    ///
+    /// \note Both key and val parameters must not be NULL.
+    /// \note The val parameter should point to an array of len boolean values.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn mj_value_set_list_bool(
         &mut self,
