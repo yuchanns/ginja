@@ -48,17 +48,28 @@ typedef enum mj_code {
   MJ_UNKNOWN_BLOCK,
 } mj_code;
 
+/**
+ * \brief Defines how the template environment handles undefined variables and expressions.
+ *
+ * This enumeration controls the behavior when undefined variables or expressions
+ * are encountered during template rendering.
+ *
+ * @see mj_env_set_undefined_behavior Function to set the undefined behavior policy
+ */
 typedef enum mj_undefined_behavior {
   /**
    * The default, somewhat lenient undefined behavior.
+   * Undefined variables are rendered as empty strings without errors.
    */
   MJ_UNDEFINED_BEHAVIOR_LENIENT,
   /**
    * Complains very quickly about undefined values.
+   * Undefined variables cause rendering errors immediately.
    */
   MJ_UNDEFINED_BEHAVIOR_STRICT,
   /**
    * Like Lenient, but also allows chaining of undefined lookups.
+   * Allows operations like `{{ undefined.foo.bar }}` without errors.
    */
   MJ_UNDEFINED_BEHAVIOR_CHAINABLE,
 } mj_undefined_behavior;
@@ -84,7 +95,18 @@ typedef struct mj_env {
   void *inner;
 } mj_env;
 
+/**
+ * \brief Result structure for mj_env_new function.
+ *
+ * This structure contains the result of creating a new MiniJinja environment.
+ * On success, the env field contains a pointer to the newly created environment.
+ *
+ * @see mj_env_new Function that returns this result type
+ */
 typedef struct mj_result_env_new {
+  /**
+   * Pointer to the newly created environment, or NULL on failure
+   */
   struct mj_env *env;
 } mj_result_env_new;
 
@@ -93,16 +115,66 @@ typedef struct mj_error {
   const char *message;
 } mj_error;
 
+/**
+ * \brief Result structure for mj_env_add_template function.
+ *
+ * This structure contains the result of adding a template to the environment.
+ * On success, the error field is NULL. On failure, it contains error information.
+ *
+ * @see mj_env_add_template Function that returns this result type
+ */
 typedef struct mj_result_env_add_template {
+  /**
+   * Pointer to error information, or NULL on success
+   */
   struct mj_error *error;
 } mj_result_env_add_template;
 
+/**
+ * \brief Result structure for template rendering functions.
+ *
+ * This structure contains the result of rendering a template.
+ * On success, the result field contains the rendered string and error is NULL.
+ * On failure, result is NULL and error contains error information.
+ *
+ * @see mj_env_render_template Function that returns this result type
+ * @see mj_env_render_named_string Function that returns this result type
+ *
+ * \note The result string should be freed using mj_str_free when no longer needed.
+ */
 typedef struct mj_result_env_render_template {
+  /**
+   * Pointer to the rendered string, or NULL on failure
+   */
   char *result;
+  /**
+   * Pointer to error information, or NULL on success
+   */
   struct mj_error *error;
 } mj_result_env_render_template;
 
+/**
+ * \brief Represents a MiniJinja value that can hold various data types
+ * including strings, numbers, booleans, objects, and arrays.
+ *
+ * This structure is used to pass context data to template rendering functions.
+ * It internally manages a HashMap of key-value pairs where keys are strings
+ * and values can be of various types supported by MiniJinja.
+ *
+ * @see mj_value_new Creates a new empty value
+ * @see mj_value_free Frees the memory allocated for the value
+ *
+ * \note The mj_value actually owns a pointer to a HashMap<String, Value>,
+ * which is inside the Rust core code.
+ *
+ * \remark You may use the field `inner` to check whether this is a NULL
+ * value, but should not modify it directly.
+ */
 typedef struct mj_value {
+  /**
+   * The pointer to the HashMap<String, Value> in the Rust code.
+   * Only touch this for checking whether it is NULL.
+   */
   void *inner;
 } mj_value;
 
@@ -291,14 +363,72 @@ void mj_str_free(char *ptr);
 
 void mj_error_free(struct mj_error *ptr);
 
+/**
+ * \brief Creates a new empty MiniJinja value.
+ *
+ * This function allocates and initializes a new MiniJinja value that can be used
+ * to store context data for template rendering. The value starts as an empty
+ * HashMap and can be populated using the various mj_value_set_* functions.
+ *
+ * @return Pointer to the newly created mj_value structure
+ *
+ * \note The returned value should be freed using mj_value_free when
+ * no longer needed to prevent memory leaks.
+ */
 struct mj_value *mj_value_new(void);
 
+/**
+ * \brief Frees the memory allocated for a MiniJinja value.
+ *
+ * This function properly deallocates the memory used by a MiniJinja value
+ * that was created with mj_value_new. After calling this function,
+ * the pointer should not be used anymore.
+ *
+ * @param ptr Pointer to the mj_value structure to free
+ *
+ * \note It is safe to pass NULL to this function.
+ * \note Only use this function on values created by mj_value_new.
+ */
 void mj_value_free(struct mj_value *ptr);
 
+/**
+ * \brief Sets a mj_value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is another mj_value structure. This allows for nested
+ * data structures.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to the mj_value to set as the value
+ *
+ * \note Both key and val parameters must not be NULL.
+ */
 void mj_value_set_value(struct mj_value *self, const char *key, const struct mj_value *val);
 
+/**
+ * \brief Sets a string value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a string.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Null-terminated string containing the value to set
+ *
+ * \note Both key and val parameters must not be NULL.
+ */
 void mj_value_set_string(struct mj_value *self, const char *key, const char *val);
 
+/**
+ * \brief Sets a 64-bit signed integer value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 64-bit signed integer.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The integer value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_int(struct mj_value *self, const char *key, int64_t val);
 
 void mj_value_set_int32(struct mj_value *self, const char *key, int32_t val);
@@ -315,17 +445,67 @@ void mj_value_set_uint16(struct mj_value *self, const char *key, uint16_t val);
 
 void mj_value_set_uint8(struct mj_value *self, const char *key, uint8_t val);
 
+/**
+ * \brief Sets a 64-bit floating-point value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a 64-bit floating-point number.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The floating-point value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_float(struct mj_value *self, const char *key, double val);
 
 void mj_value_set_float32(struct mj_value *self, const char *key, float val);
 
+/**
+ * \brief Sets a boolean value as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is a boolean (true or false).
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val The boolean value to set
+ *
+ * \note The key parameter must not be NULL.
+ */
 void mj_value_set_bool(struct mj_value *self, const char *key, bool val);
 
+/**
+ * \brief Sets an array of mj_value pointers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of mj_value structures. This allows for complex
+ * nested data structures and arrays of objects.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of mj_value pointers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len mj_value pointers.
+ */
 void mj_value_set_list_value(struct mj_value *self,
                              const char *key,
                              const struct mj_value *const *val,
                              uintptr_t len);
 
+/**
+ * \brief Sets an array of string pointers as a field in the value map.
+ *
+ * This function adds or updates a key-value pair in the value map where
+ * the value is an array of null-terminated strings.
+ *
+ * @param key Null-terminated string containing the key name
+ * @param val Pointer to an array of null-terminated string pointers
+ * @param len Number of elements in the array
+ *
+ * \note Both key and val parameters must not be NULL.
+ * \note The val parameter should point to an array of len string pointers.
+ * \note All strings in the array must be valid null-terminated strings.
+ */
 void mj_value_set_list_string(struct mj_value *self,
                               const char *key,
                               const char *const *val,
