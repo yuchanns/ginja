@@ -153,15 +153,15 @@ typedef enum mj_undefined_behavior {
  * @see mj_env_new This function constructs a new environment
  * @see mj_env_free This function frees the heap memory of the environment
  *
- * \note The mj_env actually owns a pointer to a minijinja::Environment,
- * which is inside the Rust core code.
+ * \note The mj_env actually owns a pointer to a Arc<RwLock<minijinja::Environment>>,
+ * which is inside the Rust core code and supports concurrent access.
  *
  * \remark You may use the field `inner` to check whether this is a NULL
  * environment.
  */
 typedef struct mj_env {
   /**
-   * The pointer to the minijinja::Environment in the Rust code.
+   * The pointer to the Arc<RwLock<minijinja::Environment>> in the Rust code.
    * Only touch this on judging whether it is NULL.
    */
   void *inner;

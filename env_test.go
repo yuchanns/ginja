@@ -10,8 +10,7 @@ import (
 )
 
 type Suite struct {
-	env    *ginja.Environment
-	assert *require.Assertions
+	env *ginja.Environment
 }
 
 func (s *Suite) Setup(t *testing.T) (err error) {
@@ -20,7 +19,6 @@ func (s *Suite) Setup(t *testing.T) (err error) {
 		return
 	}
 	s.env = env
-	s.assert = require.New(t)
 	return
 }
 
@@ -36,29 +34,26 @@ func TestSuite(t *testing.T) {
 	err := suite.Setup(t)
 	require.Nil(t, err)
 
-	defer suite.TearDown()
+	t.Cleanup(suite.TearDown)
 
 	tt := reflect.TypeOf(suite)
 	for i := range tt.NumMethod() {
 		method := tt.Method(i)
-		if !strings.HasPrefix(method.Name, "Test") {
+		testFunc, ok := method.Func.Interface().(func(*Suite, *require.Assertions))
+		if !ok {
 			continue
 		}
-		if method.Type.NumIn() != 1 || method.Type.NumOut() != 0 {
-			continue
-		}
-		testFunc := method.Func.Interface().(func(*Suite))
 		t.Run(strings.TrimLeft(method.Name, "Test"), func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 
-			testFunc(suite)
+			testFunc(suite, require.New(t))
 		})
 	}
 
 }
 
-func (s *Suite) TestRenderTemplate() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplate(assert *require.Assertions) {
+	env := s.env
 
 	assert.Nil(env.AddTemplate("test_template", "Hello, {{ name }}!"))
 	result, err := env.RenderTemplate("test_template", map[string]any{
@@ -68,8 +63,8 @@ func (s *Suite) TestRenderTemplate() {
 	assert.Equal("Hello, World!", result)
 }
 
-func (s *Suite) TestRenderTemplateWithIntTypes() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplateWithIntTypes(assert *require.Assertions) {
+	env := s.env
 
 	err := env.AddTemplate("int_template", "Age: {{ age }}, Count: {{ count }}")
 	assert.Nil(err)
@@ -82,8 +77,8 @@ func (s *Suite) TestRenderTemplateWithIntTypes() {
 	assert.Equal("Age: 25, Count: 100", result)
 }
 
-func (s *Suite) TestRenderTemplateWithIntSubTypes() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplateWithIntSubTypes(assert *require.Assertions) {
+	env := s.env
 
 	err := env.AddTemplate("int_subtypes_template_2", "Int32: {{ val32 }}, Int16: {{ val16 }}, Int8: {{ val8 }}")
 	assert.Nil(err)
@@ -97,8 +92,8 @@ func (s *Suite) TestRenderTemplateWithIntSubTypes() {
 	assert.Equal("Int32: 32, Int16: 16, Int8: 8", result)
 }
 
-func (s *Suite) TestRenderTemplateWithUintTypes() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplateWithUintTypes(assert *require.Assertions) {
+	env := s.env
 
 	err := env.AddTemplate("uint_template_3", "Size: {{ size }}, Max: {{ max }}")
 	assert.Nil(err)
@@ -111,8 +106,8 @@ func (s *Suite) TestRenderTemplateWithUintTypes() {
 	assert.Equal("Size: 256, Max: 18446744073709551615", result)
 }
 
-func (s *Suite) TestRenderTemplateWithUintSubTypes() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplateWithUintSubTypes(assert *require.Assertions) {
+	env := s.env
 
 	err := env.AddTemplate("uint_subtypes_template_4", "Uint32: {{ val32 }}, Uint16: {{ val16 }}, Uint8: {{ val8 }}")
 	assert.Nil(err)
@@ -126,8 +121,8 @@ func (s *Suite) TestRenderTemplateWithUintSubTypes() {
 	assert.Equal("Uint32: 4294967295, Uint16: 65535, Uint8: 255", result)
 }
 
-func (s *Suite) TestRenderTemplateWithFloatTypes() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplateWithFloatTypes(assert *require.Assertions) {
+	env := s.env
 
 	err := env.AddTemplate("float_template_5", "Price: {{ price }}, Rate: {{ rate }}")
 	assert.Nil(err)
@@ -142,8 +137,8 @@ func (s *Suite) TestRenderTemplateWithFloatTypes() {
 		"Expected 'Price: 19.99, Rate: 0.15' or similar float precision, got '%s'", result)
 }
 
-func (s *Suite) TestRenderTemplateWithMixedTypes() {
-	assert, env := s.assert, s.env
+func (s *Suite) TestRenderTemplateWithMixedTypes(assert *require.Assertions) {
+	env := s.env
 
 	err := env.AddTemplate("mixed_template_6", "Name: {{ name }}, Age: {{ age }}, Score: {{ score }}, Active: {{ active }}")
 	assert.Nil(err)

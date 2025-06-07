@@ -1,4 +1,5 @@
 use std::ffi::{CString, c_char, c_void};
+use std::sync::{Arc, RwLock};
 
 use minijinja::{Environment, UndefinedBehavior};
 
@@ -10,21 +11,21 @@ use super::*;
 /// @see mj_env_new This function constructs a new environment
 /// @see mj_env_free This function frees the heap memory of the environment
 ///
-/// \note The mj_env actually owns a pointer to a minijinja::Environment,
-/// which is inside the Rust core code.
+/// \note The mj_env actually owns a pointer to a Arc<RwLock<minijinja::Environment>>,
+/// which is inside the Rust core code and supports concurrent access.
 ///
 /// \remark You may use the field `inner` to check whether this is a NULL
 /// environment.
 #[repr(C)]
 pub struct mj_env {
-    /// The pointer to the minijinja::Environment in the Rust code.
+    /// The pointer to the Arc<RwLock<minijinja::Environment>> in the Rust code.
     /// Only touch this on judging whether it is NULL.
     pub inner: *mut c_void,
 }
 
 impl mj_env {
-    pub(crate) fn deref_mut(&mut self) -> &mut Environment {
-        unsafe { &mut *(self.inner as *mut Environment) }
+    pub(crate) fn deref(&self) -> &Arc<RwLock<Environment>> {
+        unsafe { &*(self.inner as *const Arc<RwLock<Environment>>) }
     }
 }
 
@@ -35,7 +36,7 @@ impl mj_env {
             if ptr.is_null() {
                 return;
             }
-            drop(Box::from_raw((*ptr).inner as *mut Environment));
+            drop(Box::from_raw((*ptr).inner as *mut Arc<RwLock<Environment>>));
             drop(Box::from_raw(ptr));
         }
     }
@@ -54,9 +55,10 @@ impl mj_env {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_new() -> mj_result_env_new {
     let env = Environment::new();
+    let env_arc = Arc::new(RwLock::new(env));
     mj_result_env_new {
         env: Box::into_raw(Box::new(mj_env {
-            inner: Box::into_raw(Box::new(env)) as *mut c_void,
+            inner: Box::into_raw(Box::new(env_arc)) as *mut c_void,
         })),
     }
 }
@@ -92,8 +94,8 @@ pub unsafe extern "C" fn mj_env_add_template(
             .to_str()
             .expect("malformed template")
     };
-    let env = unsafe { &mut *env }.deref_mut();
-    match env.add_template(name, source) {
+    let env_arc = unsafe { &*env }.deref();
+    match env_arc.write().unwrap().add_template(name, source) {
         Ok(_) => mj_result_env_add_template {
             error: std::ptr::null_mut(),
         },
@@ -120,8 +122,8 @@ pub unsafe extern "C" fn mj_env_remove_template(env: *mut mj_env, name: *const c
             .to_str()
             .expect("malformed name")
     };
-    let env = unsafe { &mut *env }.deref_mut();
-    env.remove_template(name);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().remove_template(name);
 }
 
 /// \brief Clears all templates from the environment.
@@ -132,8 +134,8 @@ pub unsafe extern "C" fn mj_env_remove_template(env: *mut mj_env, name: *const c
 /// @param env Pointer to the environment to clear templates from
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_clear_templates(env: *mut mj_env) {
-    let env = unsafe { &mut *env }.deref_mut();
-    env.clear_templates();
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().clear_templates();
 }
 
 /// \brief Renders a template by name with the provided context value.
@@ -162,8 +164,12 @@ pub unsafe extern "C" fn mj_env_render_template(
             .to_str()
             .expect("malformed name")
     };
-    let env = unsafe { &mut *env }.deref_mut();
-    let template = match env.get_template(name) {
+    let env_arc = unsafe { &*env }.deref();
+    let value = unsafe { &*value }.deref();
+
+    // We need to hold the lock for the entire operation
+    let env_guard = env_arc.read().unwrap();
+    let template = match env_guard.get_template(name) {
         Ok(template) => template,
         Err(e) => {
             return mj_result_env_render_template {
@@ -172,7 +178,6 @@ pub unsafe extern "C" fn mj_env_render_template(
             };
         }
     };
-    let value = unsafe { &*value }.deref();
     match template.render(value) {
         Ok(rendered) => mj_result_env_render_template {
             result: CString::new(rendered)
@@ -221,8 +226,12 @@ pub unsafe extern "C" fn mj_env_render_named_string(
             .expect("malformed source")
     };
     let value = unsafe { &*value }.deref();
-    let env = unsafe { &mut *env }.deref_mut();
-    match env.render_named_str(name, source, value) {
+    let env_arc = unsafe { &*env }.deref();
+    match env_arc
+        .read()
+        .unwrap()
+        .render_named_str(name, source, value)
+    {
         Ok(rendered) => mj_result_env_render_template {
             result: CString::new(rendered)
                 .expect("CString::new failed")
@@ -245,8 +254,8 @@ pub unsafe extern "C" fn mj_env_render_named_string(
 /// @param value Boolean value indicating whether to enable lstrip blocks
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_lstrip_blocks(env: *mut mj_env, value: bool) {
-    let env = unsafe { &mut *env }.deref_mut();
-    env.set_lstrip_blocks(value);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().set_lstrip_blocks(value);
 }
 
 /// \brief Sets whether to strip trailing whitespace from blocks.
@@ -258,8 +267,8 @@ pub unsafe extern "C" fn mj_env_set_lstrip_blocks(env: *mut mj_env, value: bool)
 /// @param value Boolean value indicating whether to enable trim blocks
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_trim_blocks(env: *mut mj_env, value: bool) {
-    let env = unsafe { &mut *env }.deref_mut();
-    env.set_trim_blocks(value);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().set_trim_blocks(value);
 }
 
 /// \brief Sets whether to keep trailing newlines in template output.
@@ -271,8 +280,8 @@ pub unsafe extern "C" fn mj_env_set_trim_blocks(env: *mut mj_env, value: bool) {
 /// @param value Boolean value indicating whether to keep trailing newlines
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_keep_trailing_newline(env: *mut mj_env, value: bool) {
-    let env = unsafe { &mut *env }.deref_mut();
-    env.set_keep_trailing_newline(value);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().set_keep_trailing_newline(value);
 }
 
 /// \brief Sets the maximum recursion depth for template rendering.
@@ -284,8 +293,8 @@ pub unsafe extern "C" fn mj_env_set_keep_trailing_newline(env: *mut mj_env, valu
 /// @param value Maximum recursion depth allowed
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_recursion_limit(env: *mut mj_env, value: usize) {
-    let env = unsafe { &mut *env }.deref_mut();
-    env.set_recursion_limit(value);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().set_recursion_limit(value);
 }
 
 /// \brief Sets whether to enable debug mode for template rendering.
@@ -297,8 +306,8 @@ pub unsafe extern "C" fn mj_env_set_recursion_limit(env: *mut mj_env, value: usi
 /// @param value Boolean value indicating whether to enable debug mode
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mj_env_set_debug(env: *mut mj_env, value: bool) {
-    let env = unsafe { &mut *env }.deref_mut();
-    env.set_debug(value);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().set_debug(value);
 }
 
 /// \brief Sets the undefined behavior policy for the environment.
@@ -318,8 +327,8 @@ pub unsafe extern "C" fn mj_env_set_undefined_behavior(
         mj_undefined_behavior::MJ_UNDEFINED_BEHAVIOR_STRICT => UndefinedBehavior::Strict,
         mj_undefined_behavior::MJ_UNDEFINED_BEHAVIOR_CHAINABLE => UndefinedBehavior::Chainable,
     };
-    let env = unsafe { &mut *env }.deref_mut();
-    env.set_undefined_behavior(behavior);
+    let env_arc = unsafe { &*env }.deref();
+    env_arc.write().unwrap().set_undefined_behavior(behavior);
 }
 
 /// \brief Frees a C string returned by MiniJinja functions.
