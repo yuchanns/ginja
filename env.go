@@ -15,7 +15,7 @@ type Environment struct {
 	inner *mjEnv
 }
 
-func NewEnvironment() (env *Environment, err error) {
+func New() (env *Environment, err error) {
 	ctx, cancel, err := contextWithFFIs()
 	if err != nil {
 		return
@@ -30,8 +30,14 @@ func NewEnvironment() (env *Environment, err error) {
 }
 
 func (env *Environment) Close() {
-	mjEnvFree.Symbol(env.ctx)(env.inner)
-	env.cancel()
+	if env.inner != nil {
+		mjEnvFree.Symbol(env.ctx)(env.inner)
+		env.inner = nil
+	}
+	if env.cancel != nil {
+		env.cancel()
+		env.cancel = nil
+	}
 }
 
 func (env *Environment) AddTemplate(name string, source string) (err error) {
@@ -96,7 +102,7 @@ var mjEnvNew = ffi.NewFFI(ffi.FFIOpts{
 var mjEnvFree = ffi.NewFFI(ffi.FFIOpts{
 	Sym:    "mj_env_free",
 	RType:  &jffi.TypeVoid,
-	ATypes: []*jffi.Type{&jffi.TypeVoid},
+	ATypes: []*jffi.Type{&jffi.TypePointer},
 }, func(ctx context.Context, ffiCall ffi.Call) func(*mjEnv) {
 	return func(env *mjEnv) {
 		ffiCall(nil, unsafe.Pointer(&env))

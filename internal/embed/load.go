@@ -12,7 +12,10 @@ import (
 
 var once = &sync.Once{}
 
-func LoadOnce() (path string, err error) {
+var path string
+
+func LoadOnce() (string, error) {
+	var err error
 	once.Do(func() {
 		var data []byte
 		data, err = decompressLib(libminijinjaZst)
@@ -21,7 +24,7 @@ func LoadOnce() (path string, err error) {
 		}
 		path, err = writeTempExec(pattern, data)
 	})
-	return
+	return path, err
 }
 
 func writeTempExec(pattern string, binary []byte) (path string, err error) {
