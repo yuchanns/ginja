@@ -40,26 +40,27 @@ jobs:
         env:
           OS: ${{ matrix.os }}
         run: |
-          if [ ${OS} == 'ubuntu-latest']; then
+          if [ "${OS}" == 'ubuntu-latest' ]; then
             SO="so"
             LIB="lib"
             ARCH="amd64"
             TARGET="linux"
-          elif [ ${OS} == 'macos-latest' ]; then
+          elif [ "${OS}" == 'macos-latest' ]; then
             SO="dylib"
             LIB="lib"
             ARCH="arm64"
             TARGET="darwin"
-          elif [ ${OS} == 'windows-latest' ]; then
+          elif [ "${OS}" == 'windows-latest' ]; then
             SO="dll"
             LIB=""
             ARCH="amd64"
             TARGET="windows"
           fi
           cp c/target/debug/${LIB}minijinja_c.${SO} internal/embed/${LIB}minijinja_c.${SO}
-          zstd -19 internal/embed/${LIB}minijinja_c.${SO} -o internal/embed/{LIB}minijinja_c.${TARGET}.${ARCH}.${SO}.zst
+          zstd -19 internal/embed/${LIB}minijinja_c.${SO} -o internal/embed/${LIB}minijinja_c.${TARGET}.${ARCH}.${SO}.zst
       - name: Run Tests
         shell: bash
         run: |
           go mod tidy
+          export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:/opt/homebrew/opt/libffi/lib
           CGO_ENABLED=0 go test -v .
