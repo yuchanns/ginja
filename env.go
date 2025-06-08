@@ -5,6 +5,7 @@ import (
 	"unsafe"
 
 	jffi "github.com/jupiterrider/ffi"
+	"go.yuchanns.xyz/ginja/internal/embed"
 	"go.yuchanns.xyz/ginja/internal/ffi"
 )
 
@@ -16,7 +17,11 @@ type Environment struct {
 }
 
 func New() (env *Environment, err error) {
-	ctx, cancel, err := contextWithFFIs()
+	path, err := embed.LoadOnce()
+	if err != nil {
+		return
+	}
+	ctx, cancel, err := ffi.NewContext(path)
 	if err != nil {
 		return
 	}
@@ -76,6 +81,8 @@ func (env *Environment) RenderTemplate(name string, ctx map[string]any) (rendere
 			err = mjValueSetFloat.Symbol(env.ctx)(value, k, v)
 		case float32:
 			err = mjValueSetFloat32.Symbol(env.ctx)(value, k, v)
+		case bool:
+			err = mjValueSetBool.Symbol(env.ctx)(value, k, v)
 		default:
 			// no supported type. skip
 		}

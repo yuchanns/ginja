@@ -199,3 +199,22 @@ var mjValueSetFloat32 = ffi.NewFFI(ffi.FFIOpts{
 		return
 	}
 })
+
+var mjValueSetBool = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_bool",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypeSint32},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val bool) (err error) {
+	return func(value *mjValue, key string, val bool) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+		var valueUint8 int32
+		if val {
+			valueUint8 = 1
+		}
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valueUint8))
+		return
+	}
+})

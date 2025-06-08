@@ -13,7 +13,7 @@ type Suite struct {
 	env *ginja.Environment
 }
 
-func (s *Suite) Setup(t *testing.T) (err error) {
+func (s *Suite) Setup() (err error) {
 	env, err := ginja.New()
 	if err != nil {
 		return
@@ -31,7 +31,7 @@ func (s *Suite) TearDown() {
 func TestSuite(t *testing.T) {
 	suite := &Suite{}
 
-	err := suite.Setup(t)
+	err := suite.Setup()
 	require.Nil(t, err)
 
 	t.Cleanup(suite.TearDown)
@@ -137,18 +137,33 @@ func (s *Suite) TestRenderTemplateWithFloatTypes(assert *require.Assertions) {
 		"Expected 'Price: 19.99, Rate: 0.15' or similar float precision, got '%s'", result)
 }
 
+func (s *Suite) TestRenderTemplateWithBoolTypes(assert *require.Assertions) {
+	env := s.env
+
+	err := env.AddTemplate("bool_template_7", "IsActive: {{ active }}, IsEnabled: {{ enabled }}")
+	assert.Nil(err)
+
+	result, err := env.RenderTemplate("bool_template_7", map[string]any{
+		"active":  true,
+		"enabled": false,
+	})
+	assert.Nil(err)
+	assert.Equal("IsActive: true, IsEnabled: false", result)
+}
+
 func (s *Suite) TestRenderTemplateWithMixedTypes(assert *require.Assertions) {
 	env := s.env
 
-	err := env.AddTemplate("mixed_template_6", "Name: {{ name }}, Age: {{ age }}, Score: {{ score }}, Active: {{ active }}")
+	err := env.AddTemplate("mixed_template_6", "Name: {{ name }}, Age: {{ age }}, Score: {{ score }}, Active: {{ active }}, IsEnabled: {{ enabled }}")
 	assert.Nil(err)
 
 	result, err := env.RenderTemplate("mixed_template_6", map[string]any{
-		"name":   "Alice",
-		"age":    int32(30),
-		"score":  95.5,
-		"active": uint8(1),
+		"name":    "Alice",
+		"age":     int32(30),
+		"score":   95.5,
+		"active":  uint8(1),
+		"enabled": false,
 	})
 	assert.Nil(err)
-	assert.Equal("Name: Alice, Age: 30, Score: 95.5, Active: 1", result)
+	assert.Equal("Name: Alice, Age: 30, Score: 95.5, Active: 1, IsEnabled: false", result)
 }

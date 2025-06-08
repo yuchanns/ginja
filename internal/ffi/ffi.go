@@ -30,10 +30,12 @@ type FFI[T any] struct {
 }
 
 func NewFFI[T any](opts FFIOpts, withFunc func(ctx context.Context, ffiCall Call) T) *FFI[T] {
-	return &FFI[T]{
+	ffi := &FFI[T]{
 		opts:     opts,
 		withFunc: withFunc,
 	}
+	withFFIs = append(withFFIs, ffi.WithFFI)
+	return ffi
 }
 
 func (f *FFI[T]) Symbol(ctx context.Context) T {
@@ -59,4 +61,25 @@ func (f *FFI[T]) WithFFI(ctx context.Context, lib uintptr) (context.Context, err
 		ffi.Call(&cif, fn, rValue, aValues...)
 	})
 	return context.WithValue(ctx, f.opts.Sym, val), nil
+}
+
+var withFFIs []ContextWithFFI
+
+func NewContext(path string) (ctx context.Context, cancel context.CancelFunc, err error) {
+	lib, err := LoadLibrary(path)
+	if err != nil {
+		return
+	}
+	ctx = context.Background()
+	for _, withFFI := range withFFIs {
+		ctx, err = withFFI(ctx, lib)
+		if err != nil {
+			return
+		}
+	}
+	cancel = func() {
+		_ = FreeLibrary(lib)
+	}
+
+	return
 }
