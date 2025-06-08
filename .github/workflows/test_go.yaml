@@ -1,0 +1,65 @@
+name: Test Go Binding
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Install build tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
+      - name: Install build tools (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install zstd libffi
+      - name: Install build tools (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Build Minijinja C library
+        working-directory: "c"
+        run: cargo build
+      - name: Prepare Go Artifact
+        shell: bash
+        env:
+          OS: ${{ matrix.os }}
+        run: |
+          if [ ${OS} == 'ubuntu-latest']; then
+            SO="so"
+            LIB="lib"
+            ARCH="amd64"
+            TARGET="linux"
+          elif [ ${OS} == 'macos-latest' ]; then
+            SO="dylib"
+            LIB="lib"
+            ARCH="arm64"
+            TARGET="darwin"
+          elif [ ${OS} == 'windows-latest' ]; then
+            SO="dll"
+            LIB=""
+            ARCH="amd64"
+            TARGET="windows"
+          fi
+          cp c/target/debug/${LIB}minijinja_c.${SO} internal/embed/${LIB}minijinja_c.${SO}
+          zstd -19 internal/embed/${LIB}minijinja_c.${SO} -o internal/embed/{LIB}minijinja_c.${TARGET}.${ARCH}.${SO}.zst
+      - name: Run Tests
+        shell: bash
+        run: |
+          go mod tidy
+          CGO_ENABLED=0 go test -v .
