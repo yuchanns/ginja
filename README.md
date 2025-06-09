@@ -20,3 +20,18 @@ Ginja aims to provide a more straightforward Go integration by:
 - **CGO-free approach**: Uses **purego + libffi** to eliminate CGO dependency, simplifying the build process and maintaining Go's cross-compilation capabilities
 - **Go-idiomatic API**: Designed to feel natural within Go codebases
 
+## Development
+
+### Running Tests
+To run the Go-binding tests, use the following command:
+
+```bash
+make tests
+```
+
+To run the C-binding tests, use:
+
+```bash
+make c_tests
+```
+
