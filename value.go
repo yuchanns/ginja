@@ -133,12 +133,103 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 		err = mjValueSetListFloat32.Symbol(ctx)(value, key, val)
 	case []bool:
 		err = mjValueSetListBool.Symbol(ctx)(value, key, val)
+	case map[string]string:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]int:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]int64:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]int32:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]int16:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]int8:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]uint:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]uint64:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]uint32:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]uint16:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]uint8:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]float64:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]float32:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]bool:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			nested.set(ctx, k, v)
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	default:
 		rv := reflect.ValueOf(val)
 		if rv.Kind() == reflect.Ptr {
 			rv = rv.Elem()
 		}
 		switch rv.Kind() {
+		case reflect.Map:
+			nested := v.newNested(ctx)
+			for _, key := range rv.MapKeys() {
+				mapValue := rv.MapIndex(key)
+				nested.set(ctx, key.String(), mapValue.Interface())
+			}
+			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 		case reflect.Struct:
 			nested := v.newNested(ctx)
 			nested.setStructFields(ctx, rv)
@@ -219,7 +310,7 @@ var mjValueFree = ffi.NewFFI(ffi.FFIOpts{
 	return func(value *mjValue) {
 		ffiCall(nil, unsafe.Pointer(&value))
 	}
-})
+}, true)
 
 var mjValueSetString = ffi.NewFFI(ffi.FFIOpts{
 	Sym:    "mj_value_set_string",

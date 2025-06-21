@@ -70,4 +70,4 @@ var mjErrorFree = ffi.NewFFI(ffi.FFIOpts{
 	return func(e *mjError) {
 		ffiCall(nil, unsafe.Pointer(&e))
 	}
-})
+}, true)

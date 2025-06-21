@@ -29,12 +29,16 @@ type FFI[T any] struct {
 	withFunc func(ctx context.Context, ffiCall Call) T
 }
 
-func NewFFI[T any](opts FFIOpts, withFunc func(ctx context.Context, ffiCall Call) T) *FFI[T] {
+func NewFFI[T any](opts FFIOpts, withFunc func(ctx context.Context, ffiCall Call) T, prepend ...bool) *FFI[T] {
 	ffi := &FFI[T]{
 		opts:     opts,
 		withFunc: withFunc,
 	}
-	withFFIs = append(withFFIs, ffi.WithFFI)
+	if len(prepend) > 0 && prepend[0] {
+		withFFIs = append([]ContextWithFFI{ffi.WithFFI}, withFFIs...)
+	} else {
+		withFFIs = append(withFFIs, ffi.WithFFI)
+	}
 	return ffi
 }
 

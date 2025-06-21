@@ -83,7 +83,7 @@ var mjEnvFree = ffi.NewFFI(ffi.FFIOpts{
 	return func(env *mjEnv) {
 		ffiCall(nil, unsafe.Pointer(&env))
 	}
-})
+}, true)
 
 var mjEnvAddTemplate = ffi.NewFFI(ffi.FFIOpts{
 	Sym:    "mj_env_add_template",
