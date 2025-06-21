@@ -8,6 +8,66 @@ import (
 	"go.yuchanns.xyz/ginja/internal/ffi"
 )
 
+type value struct {
+	inner *mjValue
+
+	values []*value
+}
+
+func newValue(ctx context.Context) *value {
+	return &value{
+		inner: mjValueNew.Symbol(ctx)(),
+	}
+}
+
+func (v *value) free(ctx context.Context) {
+	for _, val := range v.values {
+		val.free(ctx)
+	}
+	if v.inner == nil {
+		return
+	}
+	mjValueFree.Symbol(ctx)(v.inner)
+	v.inner = nil
+}
+
+func (v *value) set(ctx context.Context, key string, val any) (err error) {
+	value := v.inner
+	switch val := val.(type) {
+	case string:
+		err = mjValueSetString.Symbol(ctx)(value, key, val)
+	case int:
+		err = mjValueSetInt.Symbol(ctx)(value, key, int64(val))
+	case int64:
+		err = mjValueSetInt.Symbol(ctx)(value, key, val)
+	case int32:
+		err = mjValueSetInt32.Symbol(ctx)(value, key, val)
+	case int16:
+		err = mjValueSetInt16.Symbol(ctx)(value, key, val)
+	case int8:
+		err = mjValueSetInt8.Symbol(ctx)(value, key, val)
+	case uint:
+		err = mjValueSetUint.Symbol(ctx)(value, key, uint64(val))
+	case uint64:
+		err = mjValueSetUint.Symbol(ctx)(value, key, val)
+	case uint32:
+		err = mjValueSetUint32.Symbol(ctx)(value, key, val)
+	case uint16:
+		err = mjValueSetUint16.Symbol(ctx)(value, key, val)
+	case uint8:
+		err = mjValueSetUint8.Symbol(ctx)(value, key, val)
+	case float64:
+		err = mjValueSetFloat.Symbol(ctx)(value, key, val)
+	case float32:
+		err = mjValueSetFloat32.Symbol(ctx)(value, key, val)
+	case bool:
+		err = mjValueSetBool.Symbol(ctx)(value, key, val)
+	default:
+		// no supported type. skip
+	}
+	return
+}
+
 type mjValue struct{}
 
 var mjValueNew = ffi.NewFFI(ffi.FFIOpts{

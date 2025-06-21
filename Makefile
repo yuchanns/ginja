@@ -92,6 +92,7 @@ clean:
 	cd c && cargo clean
 	rm -rf c/build
 	rm -f internal/embed/*.so.zst internal/embed/*.dylib.zst internal/embed/*.dll.zst
+	go clean -testcache
 
 c_tests:
 	@echo "Building and running C tests..."

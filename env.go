@@ -50,48 +50,17 @@ func (env *Environment) AddTemplate(name string, source string) (err error) {
 }
 
 func (env *Environment) RenderTemplate(name string, ctx map[string]any) (rendered string, err error) {
-	value := mjValueNew.Symbol(env.ctx)()
-	defer mjValueFree.Symbol(env.ctx)(value)
+	value := newValue(env.ctx)
+	defer value.free(env.ctx)
 
 	for k, v := range ctx {
-		switch v := v.(type) {
-		case string:
-			err = mjValueSetString.Symbol(env.ctx)(value, k, v)
-		case int:
-			err = mjValueSetInt.Symbol(env.ctx)(value, k, int64(v))
-		case int64:
-			err = mjValueSetInt.Symbol(env.ctx)(value, k, v)
-		case int32:
-			err = mjValueSetInt32.Symbol(env.ctx)(value, k, v)
-		case int16:
-			err = mjValueSetInt16.Symbol(env.ctx)(value, k, v)
-		case int8:
-			err = mjValueSetInt8.Symbol(env.ctx)(value, k, v)
-		case uint:
-			err = mjValueSetUint.Symbol(env.ctx)(value, k, uint64(v))
-		case uint64:
-			err = mjValueSetUint.Symbol(env.ctx)(value, k, v)
-		case uint32:
-			err = mjValueSetUint32.Symbol(env.ctx)(value, k, v)
-		case uint16:
-			err = mjValueSetUint16.Symbol(env.ctx)(value, k, v)
-		case uint8:
-			err = mjValueSetUint8.Symbol(env.ctx)(value, k, v)
-		case float64:
-			err = mjValueSetFloat.Symbol(env.ctx)(value, k, v)
-		case float32:
-			err = mjValueSetFloat32.Symbol(env.ctx)(value, k, v)
-		case bool:
-			err = mjValueSetBool.Symbol(env.ctx)(value, k, v)
-		default:
-			// no supported type. skip
-		}
+		err = value.set(env.ctx, k, v)
 		if err != nil {
 			return
 		}
 	}
 
-	return mjEnvRenderTemplate.Symbol(env.ctx)(env.inner, name, value)
+	return mjEnvRenderTemplate.Symbol(env.ctx)(env.inner, name, value.inner)
 }
 
 var mjEnvNew = ffi.NewFFI(ffi.FFIOpts{
