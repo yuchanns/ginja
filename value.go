@@ -2,6 +2,7 @@ package ginja
 
 import (
 	"context"
+	"reflect"
 	"unsafe"
 
 	jffi "github.com/jupiterrider/ffi"
@@ -20,6 +21,12 @@ func newValue(ctx context.Context) *value {
 	}
 }
 
+func (v *value) newNested(ctx context.Context) *value {
+	nested := newValue(ctx)
+	v.values = append(v.values, nested)
+	return nested
+}
+
 func (v *value) free(ctx context.Context) {
 	for _, val := range v.values {
 		val.free(ctx)
@@ -36,32 +43,60 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	switch val := val.(type) {
 	case string:
 		err = mjValueSetString.Symbol(ctx)(value, key, val)
+	case *string:
+		err = mjValueSetString.Symbol(ctx)(value, key, *val)
 	case int:
 		err = mjValueSetInt.Symbol(ctx)(value, key, int64(val))
+	case *int:
+		err = mjValueSetInt.Symbol(ctx)(value, key, int64(*val))
 	case int64:
 		err = mjValueSetInt.Symbol(ctx)(value, key, val)
+	case *int64:
+		err = mjValueSetInt.Symbol(ctx)(value, key, *val)
 	case int32:
 		err = mjValueSetInt32.Symbol(ctx)(value, key, val)
+	case *int32:
+		err = mjValueSetInt32.Symbol(ctx)(value, key, *val)
 	case int16:
 		err = mjValueSetInt16.Symbol(ctx)(value, key, val)
+	case *int16:
+		err = mjValueSetInt16.Symbol(ctx)(value, key, *val)
 	case int8:
 		err = mjValueSetInt8.Symbol(ctx)(value, key, val)
+	case *int8:
+		err = mjValueSetInt8.Symbol(ctx)(value, key, *val)
 	case uint:
 		err = mjValueSetUint.Symbol(ctx)(value, key, uint64(val))
+	case *uint:
+		err = mjValueSetUint.Symbol(ctx)(value, key, uint64(*val))
 	case uint64:
 		err = mjValueSetUint.Symbol(ctx)(value, key, val)
+	case *uint64:
+		err = mjValueSetUint.Symbol(ctx)(value, key, *val)
 	case uint32:
 		err = mjValueSetUint32.Symbol(ctx)(value, key, val)
+	case *uint32:
+		err = mjValueSetUint32.Symbol(ctx)(value, key, *val)
 	case uint16:
 		err = mjValueSetUint16.Symbol(ctx)(value, key, val)
+	case *uint16:
+		err = mjValueSetUint16.Symbol(ctx)(value, key, *val)
 	case uint8:
 		err = mjValueSetUint8.Symbol(ctx)(value, key, val)
+	case *uint8:
+		err = mjValueSetUint8.Symbol(ctx)(value, key, *val)
 	case float64:
 		err = mjValueSetFloat.Symbol(ctx)(value, key, val)
+	case *float64:
+		err = mjValueSetFloat.Symbol(ctx)(value, key, *val)
 	case float32:
 		err = mjValueSetFloat32.Symbol(ctx)(value, key, val)
+	case *float32:
+		err = mjValueSetFloat32.Symbol(ctx)(value, key, *val)
 	case bool:
 		err = mjValueSetBool.Symbol(ctx)(value, key, val)
+	case *bool:
+		err = mjValueSetBool.Symbol(ctx)(value, key, *val)
 	case []string:
 		err = mjValueSetListString.Symbol(ctx)(value, key, val)
 	case []int:
@@ -99,9 +134,52 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	case []bool:
 		err = mjValueSetListBool.Symbol(ctx)(value, key, val)
 	default:
-		// no supported type. skip
+		rv := reflect.ValueOf(val)
+		if rv.Kind() == reflect.Ptr {
+			rv = rv.Elem()
+		}
+		switch rv.Kind() {
+		case reflect.Struct:
+			nested := v.newNested(ctx)
+			v.setStructFields(ctx, nested, rv)
+			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+		default:
+			// no supported type. skip
+		}
 	}
 	return
+}
+
+func (v *value) setStructFields(ctx context.Context, target *value, rv reflect.Value) {
+	for i := range rv.NumField() {
+		field := rv.Field(i)
+		fieldType := rv.Type().Field(i)
+		
+		if !field.CanInterface() {
+			continue // skip unexported fields
+		}
+		
+		// Handle embedded/anonymous structs
+		if fieldType.Anonymous {
+			// Dereference pointer if necessary
+			fieldValue := field
+			if field.Kind() == reflect.Ptr {
+				if field.IsNil() {
+					continue // skip nil embedded pointer
+				}
+				fieldValue = field.Elem()
+			}
+			
+			// If it's a struct, recursively add its fields to the current level
+			if fieldValue.Kind() == reflect.Struct {
+				v.setStructFields(ctx, target, fieldValue)
+			}
+		} else {
+			// Regular named field
+			fieldName := fieldType.Name
+			target.set(ctx, fieldName, field.Interface())
+		}
+	}
 }
 
 type mjValue struct{}
@@ -311,6 +389,21 @@ var mjValueSetBool = ffi.NewFFI(ffi.FFIOpts{
 			valueUint8 = 1
 		}
 		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valueUint8))
+		return
+	}
+})
+
+var mjValueSetValue = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_value",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val *mjValue) (err error) {
+	return func(value *mjValue, key string, val *mjValue) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&val))
 		return
 	}
 })
