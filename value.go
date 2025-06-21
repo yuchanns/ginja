@@ -62,6 +62,42 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 		err = mjValueSetFloat32.Symbol(ctx)(value, key, val)
 	case bool:
 		err = mjValueSetBool.Symbol(ctx)(value, key, val)
+	case []string:
+		err = mjValueSetListString.Symbol(ctx)(value, key, val)
+	case []int:
+		int64Slice := make([]int64, len(val))
+		for i, v := range val {
+			int64Slice[i] = int64(v)
+		}
+		err = mjValueSetListInt.Symbol(ctx)(value, key, int64Slice)
+	case []int64:
+		err = mjValueSetListInt.Symbol(ctx)(value, key, val)
+	case []int32:
+		err = mjValueSetListInt32.Symbol(ctx)(value, key, val)
+	case []int16:
+		err = mjValueSetListInt16.Symbol(ctx)(value, key, val)
+	case []int8:
+		err = mjValueSetListInt8.Symbol(ctx)(value, key, val)
+	case []uint:
+		uint64Slice := make([]uint64, len(val))
+		for i, v := range val {
+			uint64Slice[i] = uint64(v)
+		}
+		err = mjValueSetListUint.Symbol(ctx)(value, key, uint64Slice)
+	case []uint64:
+		err = mjValueSetListUint.Symbol(ctx)(value, key, val)
+	case []uint32:
+		err = mjValueSetListUint32.Symbol(ctx)(value, key, val)
+	case []uint16:
+		err = mjValueSetListUint16.Symbol(ctx)(value, key, val)
+	case []uint8:
+		err = mjValueSetListUint8.Symbol(ctx)(value, key, val)
+	case []float64:
+		err = mjValueSetListFloat.Symbol(ctx)(value, key, val)
+	case []float32:
+		err = mjValueSetListFloat32.Symbol(ctx)(value, key, val)
+	case []bool:
+		err = mjValueSetListBool.Symbol(ctx)(value, key, val)
 	default:
 		// no supported type. skip
 	}
@@ -275,6 +311,279 @@ var mjValueSetBool = ffi.NewFFI(ffi.FFIOpts{
 			valueUint8 = 1
 		}
 		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valueUint8))
+		return
+	}
+})
+
+var mjValueSetListString = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_string",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []string) (err error) {
+	return func(value *mjValue, key string, val []string) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		listString := make([]*byte, len(val))
+		for i, str := range val {
+			listString[i], err = ffi.BytePtrFromString(str)
+			if err != nil {
+				return
+			}
+		}
+
+		if len(listString) == 0 {
+			var value byte
+			listString = []*byte{&value}
+		}
+
+		valPtr := unsafe.Pointer(&listString[0])
+		length := len(listString)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListInt = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_int",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []int64) (err error) {
+	return func(value *mjValue, key string, val []int64) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []int64{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListInt32 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_int32",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []int32) (err error) {
+	return func(value *mjValue, key string, val []int32) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []int32{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListInt16 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_int16",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []int16) (err error) {
+	return func(value *mjValue, key string, val []int16) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []int16{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListInt8 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_int8",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []int8) (err error) {
+	return func(value *mjValue, key string, val []int8) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []int8{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListUint = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_uint",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []uint64) (err error) {
+	return func(value *mjValue, key string, val []uint64) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []uint64{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListUint32 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_uint32",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []uint32) (err error) {
+	return func(value *mjValue, key string, val []uint32) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []uint32{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListUint16 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_uint16",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []uint16) (err error) {
+	return func(value *mjValue, key string, val []uint16) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []uint16{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListUint8 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_uint8",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []uint8) (err error) {
+	return func(value *mjValue, key string, val []uint8) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []uint8{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListFloat = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_float",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []float64) (err error) {
+	return func(value *mjValue, key string, val []float64) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []float64{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListFloat32 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_float32",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []float32) (err error) {
+	return func(value *mjValue, key string, val []float32) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []float32{0}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListBool = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_bool",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []bool) (err error) {
+	return func(value *mjValue, key string, val []bool) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		if len(val) == 0 {
+			val = []bool{false}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
+		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
 		return
 	}
 })
