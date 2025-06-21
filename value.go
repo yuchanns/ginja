@@ -141,8 +141,24 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 		switch rv.Kind() {
 		case reflect.Struct:
 			nested := v.newNested(ctx)
-			v.setStructFields(ctx, nested, rv)
+			nested.setStructFields(ctx, rv)
 			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+		case reflect.Slice:
+			// Handle slice of structs
+			values := make([]*mjValue, 0, rv.Len())
+			for i := range rv.Len() {
+				elem := rv.Index(i)
+				if elem.Kind() == reflect.Ptr {
+					elem = elem.Elem()
+				}
+				if elem.Kind() != reflect.Struct {
+					continue // skip non-struct elements
+				}
+				nested := v.newNested(ctx)
+				nested.setStructFields(ctx, elem)
+				values = append(values, nested.inner)
+			}
+			err = mjValueSetListValue.Symbol(ctx)(value, key, values)
 		default:
 			// no supported type. skip
 		}
@@ -150,15 +166,15 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	return
 }
 
-func (v *value) setStructFields(ctx context.Context, target *value, rv reflect.Value) {
+func (value *value) setStructFields(ctx context.Context, rv reflect.Value) {
 	for i := range rv.NumField() {
 		field := rv.Field(i)
 		fieldType := rv.Type().Field(i)
-		
+
 		if !field.CanInterface() {
 			continue // skip unexported fields
 		}
-		
+
 		// Handle embedded/anonymous structs
 		if fieldType.Anonymous {
 			// Dereference pointer if necessary
@@ -169,15 +185,15 @@ func (v *value) setStructFields(ctx context.Context, target *value, rv reflect.V
 				}
 				fieldValue = field.Elem()
 			}
-			
+
 			// If it's a struct, recursively add its fields to the current level
 			if fieldValue.Kind() == reflect.Struct {
-				v.setStructFields(ctx, target, fieldValue)
+				value.setStructFields(ctx, fieldValue)
 			}
 		} else {
 			// Regular named field
 			fieldName := fieldType.Name
-			target.set(ctx, fieldName, field.Interface())
+			value.set(ctx, fieldName, field.Interface())
 		}
 	}
 }
@@ -676,6 +692,31 @@ var mjValueSetListBool = ffi.NewFFI(ffi.FFIOpts{
 
 		valPtr := unsafe.Pointer(&val[0])
 		length := len(val)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetListValue = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_list_value",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, key string, val []*mjValue) (err error) {
+	return func(value *mjValue, key string, val []*mjValue) (err error) {
+		keyPtr, err := ffi.BytePtrFromString(key)
+		if err != nil {
+			return
+		}
+
+		length := len(val)
+		if len(val) == 0 {
+			// Create a dummy value for empty arrays
+			dummyValue := mjValueNew.Symbol(ctx)()
+			defer mjValueFree.Symbol(ctx)(dummyValue)
+			val = []*mjValue{dummyValue}
+		}
+
+		valPtr := unsafe.Pointer(&val[0])
 		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
 		return
 	}

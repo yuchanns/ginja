@@ -397,28 +397,120 @@ func (s *Suite) TestRenderTemplateWithMixedFieldStruct(assert *require.Assertion
 	assert.Contains(result, "Size: 15")
 }
 
-// func (s *Suite) TestRenderTemplateWithStructSlice(assert *require.Assertions) {
-// 	env := s.env
-//
-// 	type User struct {
-// 		ID   int
-// 		Name string
-// 		Age  int
-// 	}
-//
-// 	err := env.AddTemplate("struct_slice_template", "Users: {% for user in users %}{{ user.Name }}({{ user.ID }}, {{ user.Age }}){% if not loop.last %}, {% endif %}{% endfor %}")
-// 	assert.Nil(err)
-//
-// 	result, err := env.RenderTemplate("struct_slice_template", map[string]any{
-// 		"users": []User{
-// 			{ID: 1, Name: "Alice", Age: 25},
-// 			{ID: 2, Name: "Bob", Age: 30},
-// 			{ID: 3, Name: "Charlie", Age: 35},
-// 		},
-// 	})
-// 	assert.Nil(err)
-// 	assert.Equal("Users: Alice(1, 25), Bob(2, 30), Charlie(3, 35)", result)
-// }
+func (s *Suite) TestRenderTemplateWithStructSlice(assert *require.Assertions) {
+	env := s.env
+
+	type User struct {
+		ID   int
+		Name string
+		Age  int
+	}
+
+	err := env.AddTemplate("struct_slice_template", "Users: {% for user in users %}{{ user.Name }}({{ user.ID }}, {{ user.Age }}){% if not loop.last %}, {% endif %}{% endfor %}")
+	assert.Nil(err)
+
+	result, err := env.RenderTemplate("struct_slice_template", map[string]any{
+		"users": []User{
+			{ID: 1, Name: "Alice", Age: 25},
+			{ID: 2, Name: "Bob", Age: 30},
+			{ID: 3, Name: "Charlie", Age: 35},
+		},
+	})
+	assert.Nil(err)
+	assert.Equal("Users: Alice(1, 25), Bob(2, 30), Charlie(3, 35)", result)
+}
+
+func (s *Suite) TestRenderTemplateWithEmptyStructSlice(assert *require.Assertions) {
+	env := s.env
+
+	type User struct {
+		ID   int
+		Name string
+		Age  int
+	}
+
+	err := env.AddTemplate("empty_struct_slice_template", "Users: {% for user in users %}{{ user.Name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if users|length == 0 %}No users{% endif %}")
+	assert.Nil(err)
+
+	result, err := env.RenderTemplate("empty_struct_slice_template", map[string]any{
+		"users": []User{},
+	})
+	assert.Nil(err)
+	assert.Contains(result, "No users")
+}
+
+func (s *Suite) TestRenderTemplateWithPointerStructSlice(assert *require.Assertions) {
+	env := s.env
+
+	type User struct {
+		ID   int
+		Name string
+		Age  int
+	}
+
+	err := env.AddTemplate("pointer_struct_slice_template", "Users: {% for user in users %}{{ user.Name }}({{ user.ID }}, {{ user.Age }}){% if not loop.last %}, {% endif %}{% endfor %}")
+	assert.Nil(err)
+
+	result, err := env.RenderTemplate("pointer_struct_slice_template", map[string]any{
+		"users": []*User{
+			{ID: 1, Name: "Alice", Age: 25},
+			{ID: 2, Name: "Bob", Age: 30},
+			{ID: 3, Name: "Charlie", Age: 35},
+		},
+	})
+	assert.Nil(err)
+	assert.Equal("Users: Alice(1, 25), Bob(2, 30), Charlie(3, 35)", result)
+}
+
+func (s *Suite) TestRenderTemplateWithMixedStructSlice(assert *require.Assertions) {
+	env := s.env
+
+	type Product struct {
+		Name    string
+		Price   float64
+		InStock bool
+		Qty     int32
+	}
+
+	err := env.AddTemplate("mixed_struct_slice_template", "Products: {% for product in products %}{{ product.Name }}(${{ product.Price }}, Stock: {{ product.InStock }}, Qty: {{ product.Qty }}){% if not loop.last %}, {% endif %}{% endfor %}")
+	assert.Nil(err)
+
+	result, err := env.RenderTemplate("mixed_struct_slice_template", map[string]any{
+		"products": []Product{
+			{Name: "Laptop", Price: 999.99, InStock: true, Qty: int32(10)},
+			{Name: "Mouse", Price: 29.99, InStock: false, Qty: int32(0)},
+		},
+	})
+	assert.Nil(err)
+	assert.Equal("Products: Laptop($999.99, Stock: true, Qty: 10), Mouse($29.99, Stock: false, Qty: 0)", result)
+}
+
+func (s *Suite) TestRenderTemplateWithNestedStructSlice(assert *require.Assertions) {
+	env := s.env
+
+	type Address struct {
+		Street string
+		City   string
+	}
+
+	type Person struct {
+		Name    string
+		Age     int
+		Address Address
+	}
+
+	err := env.AddTemplate("nested_struct_slice_template", "People: {% for person in people %}{{ person.Name }} ({{ person.Age }}, {{ person.Address.City }}){% if not loop.last %}, {% endif %}{% endfor %}")
+	assert.Nil(err)
+
+	result, err := env.RenderTemplate("nested_struct_slice_template", map[string]any{
+		"people": []Person{
+			{Name: "Alice", Age: 25, Address: Address{Street: "123 Main St", City: "New York"}},
+			{Name: "Bob", Age: 30, Address: Address{Street: "456 Oak Ave", City: "Boston"}},
+		},
+	})
+	assert.Nil(err)
+	assert.Equal("People: Alice (25, New York), Bob (30, Boston)", result)
+}
 
 func (s *Suite) TestRenderTemplateWithEmbeddedStruct(assert *require.Assertions) {
 	env := s.env
