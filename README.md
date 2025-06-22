@@ -22,6 +22,10 @@ Ginja aims to provide a more straightforward Go integration by:
 
 ## Usage
 
+```bash
+go get -u go.yuchanns.xyz/ginja
+```
+
 ### Basic Example
 
 ```go
