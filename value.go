@@ -100,11 +100,16 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	case []string:
 		err = mjValueSetListString.Symbol(ctx)(value, key, val)
 	case []int:
-		int64Slice := make([]int64, len(val))
-		for i, v := range val {
-			int64Slice[i] = int64(v)
+		if unsafe.Sizeof(int(0)) == unsafe.Sizeof(int64(0)) {
+			int64Slice := *(*[]int64)(unsafe.Pointer(&val))
+			err = mjValueSetListInt.Symbol(ctx)(value, key, int64Slice)
+		} else {
+			int64Slice := make([]int64, len(val))
+			for i, v := range val {
+				int64Slice[i] = int64(v)
+			}
+			err = mjValueSetListInt.Symbol(ctx)(value, key, int64Slice)
 		}
-		err = mjValueSetListInt.Symbol(ctx)(value, key, int64Slice)
 	case []int64:
 		err = mjValueSetListInt.Symbol(ctx)(value, key, val)
 	case []int32:
@@ -114,11 +119,16 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	case []int8:
 		err = mjValueSetListInt8.Symbol(ctx)(value, key, val)
 	case []uint:
-		uint64Slice := make([]uint64, len(val))
-		for i, v := range val {
-			uint64Slice[i] = uint64(v)
+		if unsafe.Sizeof(uint(0)) == unsafe.Sizeof(uint64(0)) {
+			uint64Slice := *(*[]uint64)(unsafe.Pointer(&val))
+			err = mjValueSetListUint.Symbol(ctx)(value, key, uint64Slice)
+		} else {
+			uint64Slice := make([]uint64, len(val))
+			for i, v := range val {
+				uint64Slice[i] = uint64(v)
+			}
+			err = mjValueSetListUint.Symbol(ctx)(value, key, uint64Slice)
 		}
-		err = mjValueSetListUint.Symbol(ctx)(value, key, uint64Slice)
 	case []uint64:
 		err = mjValueSetListUint.Symbol(ctx)(value, key, val)
 	case []uint32:
