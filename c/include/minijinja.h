@@ -252,13 +252,13 @@ typedef struct mj_result_env_render_template {
  * including strings, numbers, booleans, objects, and arrays.
  *
  * This structure is used to pass context data to template rendering functions.
- * It internally manages a HashMap of key-value pairs where keys are strings
- * and values can be of various types supported by MiniJinja.
+ * It internally manages either a HashMap of key-value pairs or a Vec of values
+ * where keys are strings and values can be of various types supported by MiniJinja.
  *
  * @see mj_value_new Creates a new empty value
  * @see mj_value_free Frees the memory allocated for the value
  *
- * \note The mj_value actually owns a pointer to a HashMap<String, Value>,
+ * \note The mj_value actually owns a pointer to a ValueContainer,
  * which is inside the Rust core code.
  *
  * \remark You may use the field `inner` to check whether this is a NULL
@@ -266,7 +266,7 @@ typedef struct mj_result_env_render_template {
  */
 typedef struct mj_value {
   /**
-   * The pointer to the HashMap<String, Value> in the Rust code.
+   * The pointer to the ValueContainer in the Rust code.
    * Only touch this for checking whether it is NULL.
    */
   void *inner;
@@ -482,6 +482,20 @@ void mj_error_free(struct mj_error *ptr);
  * no longer needed to prevent memory leaks.
  */
 struct mj_value *mj_value_new(void);
+
+/**
+ * \brief Creates a new empty MiniJinja value that can hold a list.
+ *
+ * This function allocates and initializes a new MiniJinja value that is
+ * specifically designed to hold a list of values. The value starts as an empty
+ * Vec<Value> and can be populated using the various mj_value_set_list_* functions.
+ *
+ * @return Pointer to the newly created mj_value structure
+ *
+ * \note The returned value should be freed using mj_value_free when
+ * no longer needed to prevent memory leaks.
+ */
+struct mj_value *mj_value_new_list(void);
 
 /**
  * \brief Frees the memory allocated for a MiniJinja value.
@@ -899,6 +913,179 @@ void mj_value_set_list_float32(struct mj_value *self,
  * \note The val parameter should point to an array of len boolean values.
  */
 void mj_value_set_list_bool(struct mj_value *self, const char *key, const bool *val, uintptr_t len);
+
+/**
+ * \brief Appends a value to a list in the mj_value.
+ *
+ * This function appends a single mj_value to the end of a list contained
+ * within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val Pointer to the mj_value to append
+ *
+ * \note The val parameter must not be NULL.
+ * \remark This function is unsafe because it dereferences the pointer
+ * and assumes that the mj_value contains a list.
+ */
+void mj_value_append_value(struct mj_value *self, const struct mj_value *val);
+
+/**
+ * \brief Appends a string value to a list in the mj_value.
+ *
+ * This function appends a single string to the end of a list contained
+ * within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val Null-terminated string to append
+ *
+ * \note The val parameter must not be NULL.
+ * \remark This function is unsafe because it dereferences the pointer
+ * and assumes that the mj_value contains a list.
+ */
+void mj_value_append_string(struct mj_value *self, const char *val);
+
+/**
+ * \brief Appends a 64-bit signed integer value to a list in the mj_value.
+ *
+ * This function appends a single 64-bit signed integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_int(struct mj_value *self, int64_t val);
+
+/**
+ * \brief Appends a 32-bit signed integer value to a list in the mj_value.
+ *
+ * This function appends a single 32-bit signed integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 32-bit integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_int32(struct mj_value *self, int32_t val);
+
+/**
+ * \brief Appends a 16-bit signed integer value to a list in the mj_value.
+ *
+ * This function appends a single 16-bit signed integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 16-bit integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_int16(struct mj_value *self, int16_t val);
+
+/**
+ * \brief Appends an 8-bit signed integer value to a list in the mj_value.
+ *
+ * This function appends a single 8-bit signed integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 8-bit integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_int8(struct mj_value *self, int8_t val);
+
+/**
+ * \brief Appends a 64-bit unsigned integer value to a list in the mj_value.
+ *
+ * This function appends a single 64-bit unsigned integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 64-bit unsigned integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_uint(struct mj_value *self, uint64_t val);
+
+/**
+ * \brief Appends a 32-bit unsigned integer value to a list in the mj_value.
+ *
+ * This function appends a single 32-bit unsigned integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 32-bit unsigned integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_uint32(struct mj_value *self, uint32_t val);
+
+/**
+ * \brief Appends a 16-bit unsigned integer value to a list in the mj_value.
+ *
+ * This function appends a single 16-bit unsigned integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 16-bit unsigned integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_uint16(struct mj_value *self, uint16_t val);
+
+/**
+ * \brief Appends an 8-bit unsigned integer value to a list in the mj_value.
+ *
+ * This function appends a single 8-bit unsigned integer to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 8-bit unsigned integer value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_uint8(struct mj_value *self, uint8_t val);
+
+/**
+ * \brief Appends a 64-bit floating-point value to a list in the mj_value.
+ *
+ * This function appends a single 64-bit floating-point number to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The floating-point value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_float(struct mj_value *self, double val);
+
+/**
+ * \brief Appends a 32-bit floating-point value to a list in the mj_value.
+ *
+ * This function appends a single 32-bit floating-point number to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The 32-bit floating-point value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_float32(struct mj_value *self, float val);
+
+/**
+ * \brief Appends a boolean value to a list in the mj_value.
+ *
+ * This function appends a single boolean value to the end of a list
+ * contained within the mj_value. If the mj_value does not contain a list,
+ * it will panic.
+ *
+ * @param val The boolean value to append
+ *
+ * \remark This function is unsafe because it assumes that the mj_value contains a list.
+ */
+void mj_value_append_bool(struct mj_value *self, bool val);
 
 #ifdef __cplusplus
 }  // extern "C"

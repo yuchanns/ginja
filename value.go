@@ -22,8 +22,20 @@ func newValue(ctx context.Context) *value {
 	}
 }
 
+func newValueList(ctx context.Context) *value {
+	return &value{
+		inner: mjValueNewList.Symbol(ctx)(),
+	}
+}
+
 func (v *value) newNested(ctx context.Context) *value {
 	nested := newValue(ctx)
+	v.values = append(v.values, nested)
+	return nested
+}
+
+func (v *value) newNestedList(ctx context.Context) *value {
+	nested := newValueList(ctx)
 	v.values = append(v.values, nested)
 	return nested
 }
@@ -37,6 +49,266 @@ func (v *value) free(ctx context.Context) {
 	}
 	mjValueFree.Symbol(ctx)(v.inner)
 	v.inner = nil
+}
+
+func (v *value) append(ctx context.Context, val any) (err error) {
+	value := v.inner
+	switch val := val.(type) {
+	case string:
+		err = mjValueAppendString.Symbol(ctx)(value, val)
+	case *string:
+		err = mjValueAppendString.Symbol(ctx)(value, *val)
+	case int:
+		err = mjValueAppendInt.Symbol(ctx)(value, int64(val))
+	case *int:
+		err = mjValueAppendInt.Symbol(ctx)(value, int64(*val))
+	case int64:
+		err = mjValueAppendInt.Symbol(ctx)(value, val)
+	case *int64:
+		err = mjValueAppendInt.Symbol(ctx)(value, *val)
+	case int32:
+		err = mjValueAppendInt32.Symbol(ctx)(value, val)
+	case *int32:
+		err = mjValueAppendInt32.Symbol(ctx)(value, *val)
+	case int16:
+		err = mjValueAppendInt16.Symbol(ctx)(value, val)
+	case *int16:
+		err = mjValueAppendInt16.Symbol(ctx)(value, *val)
+	case int8:
+		err = mjValueAppendInt8.Symbol(ctx)(value, val)
+	case *int8:
+		err = mjValueAppendInt8.Symbol(ctx)(value, *val)
+	case uint:
+		err = mjValueAppendUint.Symbol(ctx)(value, uint64(val))
+	case *uint:
+		err = mjValueAppendUint.Symbol(ctx)(value, uint64(*val))
+	case uint64:
+		err = mjValueAppendUint.Symbol(ctx)(value, val)
+	case *uint64:
+		err = mjValueAppendUint.Symbol(ctx)(value, *val)
+	case uint32:
+		err = mjValueAppendUint32.Symbol(ctx)(value, val)
+	case *uint32:
+		err = mjValueAppendUint32.Symbol(ctx)(value, *val)
+	case uint16:
+		err = mjValueAppendUint16.Symbol(ctx)(value, val)
+	case *uint16:
+		err = mjValueAppendUint16.Symbol(ctx)(value, *val)
+	case uint8:
+		err = mjValueAppendUint8.Symbol(ctx)(value, val)
+	case *uint8:
+		err = mjValueAppendUint8.Symbol(ctx)(value, *val)
+	case float64:
+		err = mjValueAppendFloat.Symbol(ctx)(value, val)
+	case *float64:
+		err = mjValueAppendFloat.Symbol(ctx)(value, *val)
+	case float32:
+		err = mjValueAppendFloat32.Symbol(ctx)(value, val)
+	case *float32:
+		err = mjValueAppendFloat32.Symbol(ctx)(value, *val)
+	case bool:
+		err = mjValueAppendBool.Symbol(ctx)(value, val)
+	case *bool:
+		err = mjValueAppendBool.Symbol(ctx)(value, *val)
+	case map[string]string:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]int:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]int64:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]int32:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]int16:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]int8:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]uint:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]uint64:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]uint32:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]uint16:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]uint8:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]float64:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]float32:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]bool:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case map[string]any:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+	case nil:
+		err = mjValueAppendValue.Symbol(ctx)(value, nil)
+	default:
+		rv := reflect.ValueOf(val)
+		for rv.Kind() == reflect.Ptr {
+			rv = rv.Elem()
+		}
+		switch rv.Kind() {
+		case reflect.String: // Type Alias
+			err = v.append(ctx, rv.String())
+		case reflect.Int: // Type Alias
+			err = v.append(ctx, int(rv.Int()))
+		case reflect.Int8: // Type Alias
+			err = v.append(ctx, int8(rv.Int()))
+		case reflect.Int16: // Type Alias
+			err = v.append(ctx, int16(rv.Int()))
+		case reflect.Int32: // Type Alias
+			err = v.append(ctx, int32(rv.Int()))
+		case reflect.Int64: // Type Alias
+			err = v.append(ctx, rv.Int())
+		case reflect.Uint: // Type Alias
+			err = v.append(ctx, uint(rv.Uint()))
+		case reflect.Uint8: // Type Alias
+			err = v.append(ctx, uint8(rv.Uint()))
+		case reflect.Uint16: // Type Alias
+			err = v.append(ctx, uint16(rv.Uint()))
+		case reflect.Uint32: // Type Alias
+			err = v.append(ctx, uint32(rv.Uint()))
+		case reflect.Uint64: // Type Alias
+			err = v.append(ctx, rv.Uint())
+		case reflect.Float32: // Type Alias
+			err = v.append(ctx, float32(rv.Float()))
+		case reflect.Float64: // Type Alias
+			err = v.append(ctx, rv.Float())
+		case reflect.Bool: // Type Alias
+			err = v.append(ctx, rv.Bool())
+		case reflect.Map:
+			nested := v.newNested(ctx)
+			err = nested.setMapFields(ctx, rv)
+			if err != nil {
+				return
+			}
+			err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+		case reflect.Struct:
+			nested := v.newNested(ctx)
+			err = nested.setStructFields(ctx, rv)
+			if err != nil {
+				return
+			}
+			err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+		case reflect.Slice, reflect.Array:
+			nested := v.newNestedList(ctx)
+			for i := range rv.Len() {
+				nested.append(ctx, rv.Index(i).Interface())
+			}
+			err = mjValueAppendValue.Symbol(ctx)(value, nested.inner)
+		default:
+			err = &Error{
+				code:    CodeBadSerialization,
+				message: fmt.Sprintf("cannot append value of type %s", rv.Type()),
+			}
+		}
+	}
+	return
 }
 
 func (v *value) set(ctx context.Context, key string, val any) (err error) {
@@ -282,21 +554,53 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	case nil:
 		err = nil
 	case []any:
-		err = &Error{
-			code:    CodeBadSerialization,
-			message: "cannot serialize []any",
+		nested := v.newNestedList(ctx)
+		for _, item := range val {
+			err = nested.append(ctx, item)
+			if err != nil {
+				return
+			}
 		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	default:
 		rv := reflect.ValueOf(val)
 		for rv.Kind() == reflect.Ptr {
 			rv = rv.Elem()
 		}
 		switch rv.Kind() {
-		case reflect.Map:
+		case reflect.String: // Type Alias
+			err = v.set(ctx, key, rv.String())
+		case reflect.Int: // Type Alias
+			err = v.set(ctx, key, int(rv.Int()))
+		case reflect.Int8: // Type Alias
+			err = v.set(ctx, key, int8(rv.Int()))
+		case reflect.Int16: // Type Alias
+			err = v.set(ctx, key, int16(rv.Int()))
+		case reflect.Int32: // Type Alias
+			err = v.set(ctx, key, int32(rv.Int()))
+		case reflect.Int64: // Type Alias
+			err = v.set(ctx, key, rv.Int())
+		case reflect.Uint: // Type Alias
+			err = v.set(ctx, key, uint(rv.Uint()))
+		case reflect.Uint8: // Type Alias
+			err = v.set(ctx, key, uint8(rv.Uint()))
+		case reflect.Uint16: // Type Alias
+			err = v.set(ctx, key, uint16(rv.Uint()))
+		case reflect.Uint32: // Type Alias
+			err = v.set(ctx, key, uint32(rv.Uint()))
+		case reflect.Uint64: // Type Alias
+			err = v.set(ctx, key, rv.Uint())
+		case reflect.Float32: // Type Alias
+			err = v.set(ctx, key, float32(rv.Float()))
+		case reflect.Float64: // Type Alias
+			err = v.set(ctx, key, rv.Float())
+		case reflect.Bool: // Type Alias
+			err = v.set(ctx, key, rv.Bool())
+		case reflect.Map: // map[string]MyStruct
 			nested := v.newNested(ctx)
 			err = nested.setMapFields(ctx, rv)
 			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
-		case reflect.Struct:
+		case reflect.Struct: // MyStruct
 			nested := v.newNested(ctx)
 			err = nested.setStructFields(ctx, rv)
 			if err != nil {
@@ -325,12 +629,14 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 						return
 					}
 					values = append(values, nested.inner)
-				case reflect.Array, reflect.Slice:
-					err = &Error{
-						code:    CodeBadSerialization,
-						message: "cannot serialize slice of slices",
+				case reflect.Array, reflect.Slice: // [][]string, [][]int, etc.
+					nested := v.newNestedList(ctx)
+					for i := range elem.Len() {
+						err = nested.append(ctx, elem.Index(i).Interface())
+						if err != nil {
+							return
+						}
 					}
-					return
 				}
 			}
 			err = mjValueSetListValue.Symbol(ctx)(value, key, values)
@@ -392,6 +698,17 @@ type mjValue struct{}
 
 var mjValueNew = ffi.NewFFI(ffi.FFIOpts{
 	Sym:   "mj_value_new",
+	RType: &jffi.TypePointer,
+}, func(ctx context.Context, ffiCall ffi.Call) func() *mjValue {
+	return func() *mjValue {
+		var value = &mjValue{}
+		ffiCall(unsafe.Pointer(&value))
+		return value
+	}
+})
+
+var mjValueNewList = ffi.NewFFI(ffi.FFIOpts{
+	Sym:   "mj_value_new_list",
 	RType: &jffi.TypePointer,
 }, func(ctx context.Context, ffiCall ffi.Call) func() *mjValue {
 	return func() *mjValue {
@@ -908,6 +1225,162 @@ var mjValueSetListValue = ffi.NewFFI(ffi.FFIOpts{
 
 		valPtr := unsafe.Pointer(&val[0])
 		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+// Append FFI bindings
+var mjValueAppendString = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_string",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val string) (err error) {
+	return func(value *mjValue, val string) (err error) {
+		valPtr, err := ffi.BytePtrFromString(val)
+		if err != nil {
+			return
+		}
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&valPtr))
+		return
+	}
+})
+
+var mjValueAppendInt = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_int",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeSint64},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val int64) (err error) {
+	return func(value *mjValue, val int64) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendInt32 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_int32",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeSint32},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val int32) (err error) {
+	return func(value *mjValue, val int32) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendInt16 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_int16",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeSint16},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val int16) (err error) {
+	return func(value *mjValue, val int16) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendInt8 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_int8",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeSint8},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val int8) (err error) {
+	return func(value *mjValue, val int8) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendUint = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_uint",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeUint64},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val uint64) (err error) {
+	return func(value *mjValue, val uint64) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendUint32 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_uint32",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeUint32},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val uint32) (err error) {
+	return func(value *mjValue, val uint32) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendUint16 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_uint16",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeUint16},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val uint16) (err error) {
+	return func(value *mjValue, val uint16) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendUint8 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_uint8",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeUint8},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val uint8) (err error) {
+	return func(value *mjValue, val uint8) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendFloat = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_float",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeDouble},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val float64) (err error) {
+	return func(value *mjValue, val float64) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendFloat32 = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_float32",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeFloat},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val float32) (err error) {
+	return func(value *mjValue, val float32) (err error) {
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+var mjValueAppendBool = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_bool",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypeSint32},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val bool) (err error) {
+	return func(value *mjValue, val bool) (err error) {
+		var valueInt32 int32
+		if val {
+			valueInt32 = 1
+		}
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&valueInt32))
+		return
+	}
+})
+
+var mjValueAppendValue = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_append_value",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, val *mjValue) (err error) {
+	return func(value *mjValue, val *mjValue) (err error) {
+		if val == nil {
+			val = mjValueNew.Symbol(ctx)()
+			defer mjValueFree.Symbol(ctx)(val)
+		}
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
 		return
 	}
 })

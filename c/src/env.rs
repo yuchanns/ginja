@@ -169,7 +169,7 @@ pub unsafe extern "C" fn mj_env_render_template(
             .expect("malformed name")
     };
     let env_arc = unsafe { &*env }.deref();
-    let value = unsafe { &*value }.deref();
+    let value = unsafe { &*value }.deref_as_map().unwrap();
 
     // We need to hold the lock for the entire operation
     let env_guard = env_arc.read().unwrap();
@@ -229,7 +229,7 @@ pub unsafe extern "C" fn mj_env_render_named_string(
             .to_str()
             .expect("malformed source")
     };
-    let value = unsafe { &*value }.deref();
+    let value = unsafe { &*value }.deref_as_map().unwrap();
     let env_arc = unsafe { &*env }.deref();
     match env_arc
         .read()
