@@ -2,6 +2,7 @@ package ginja
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"unsafe"
 
@@ -278,6 +279,8 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case nil:
+		err = nil
 	default:
 		rv := reflect.ValueOf(val)
 		if rv.Kind() == reflect.Ptr {
@@ -321,7 +324,10 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 			}
 			err = mjValueSetListValue.Symbol(ctx)(value, key, values)
 		default:
-			// no supported type. skip
+			err = &Error{
+				code:    CodeBadSerialization,
+				message: fmt.Sprintf("cannot serialize value of type %s", rv.Type()),
+			}
 		}
 	}
 	return
