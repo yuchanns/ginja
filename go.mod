@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/ebitengine/purego v0.8.4
-	github.com/jupiterrider/ffi v0.4.1
+	github.com/jupiterrider/ffi v0.5.0
 	github.com/klauspost/compress v1.18.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sys v0.33.0
