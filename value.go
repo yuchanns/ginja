@@ -136,85 +136,136 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	case map[string]string:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]int:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]int64:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]int32:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]int16:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]int8:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]uint:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]uint64:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]uint32:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]uint16:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]uint8:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]float64:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]float32:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case map[string]bool:
 		nested := v.newNested(ctx)
 		for k, v := range val {
-			nested.set(ctx, k, v)
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
+		}
+		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
+	case map[string]any:
+		nested := v.newNested(ctx)
+		for k, v := range val {
+			err = nested.set(ctx, k, v)
+			if err != nil {
+				return
+			}
 		}
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	default:
@@ -227,12 +278,18 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 			nested := v.newNested(ctx)
 			for _, key := range rv.MapKeys() {
 				mapValue := rv.MapIndex(key)
-				nested.set(ctx, key.String(), mapValue.Interface())
+				err = nested.set(ctx, key.String(), mapValue.Interface())
+				if err != nil {
+					return
+				}
 			}
 			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 		case reflect.Struct:
 			nested := v.newNested(ctx)
-			nested.setStructFields(ctx, rv)
+			err = nested.setStructFields(ctx, rv)
+			if err != nil {
+				return
+			}
 			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 		case reflect.Slice:
 			// Handle slice of structs
@@ -246,7 +303,10 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 					continue // skip non-struct elements
 				}
 				nested := v.newNested(ctx)
-				nested.setStructFields(ctx, elem)
+				err = nested.setStructFields(ctx, elem)
+				if err != nil {
+					return
+				}
 				values = append(values, nested.inner)
 			}
 			err = mjValueSetListValue.Symbol(ctx)(value, key, values)
@@ -257,7 +317,7 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 	return
 }
 
-func (value *value) setStructFields(ctx context.Context, rv reflect.Value) {
+func (value *value) setStructFields(ctx context.Context, rv reflect.Value) (err error) {
 	for i := range rv.NumField() {
 		field := rv.Field(i)
 		fieldType := rv.Type().Field(i)
@@ -279,14 +339,15 @@ func (value *value) setStructFields(ctx context.Context, rv reflect.Value) {
 
 			// If it's a struct, recursively add its fields to the current level
 			if fieldValue.Kind() == reflect.Struct {
-				value.setStructFields(ctx, fieldValue)
+				err = value.setStructFields(ctx, fieldValue)
 			}
 		} else {
 			// Regular named field
 			fieldName := fieldType.Name
-			value.set(ctx, fieldName, field.Interface())
+			err = value.set(ctx, fieldName, field.Interface())
 		}
 	}
+	return
 }
 
 type mjValue struct{}
