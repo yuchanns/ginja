@@ -3,11 +3,11 @@ package ginja
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"unsafe"
 
 	jffi "github.com/jupiterrider/ffi"
 	"go.yuchanns.xyz/ginja/internal/ffi"
+	"github.com/goccy/go-reflect"
 )
 
 type value struct {
