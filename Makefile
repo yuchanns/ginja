@@ -85,7 +85,7 @@ build-current: internal/embed/$(CURRENT_COMPRESSED_FILE)
 # Run tests with current platform library
 tests: build-current
 	@echo "Running Go tests..."
-	go test -v .
+	go test -race -gcflags=all=-d=checkptr -v .
 
 clean:
 	@echo "Cleaning build artifacts..."
