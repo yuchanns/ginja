@@ -1,4 +1,4 @@
-.PHONY: tests clean build-current c_tests
+.PHONY: tests clean build-current c_tests bench
 
 # Detect current OS and architecture
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -99,4 +99,8 @@ c_tests:
 	mkdir -p c/build
 	cd c/build && cmake .. -DTEST_ENABLE_ASAN=ON
 	cd c/build && make tests
+
+bench:
+	@echo "Running Go benchmarks..."
+	go test -bench=. -benchmem -count=6 -run=^$$ -v
 
