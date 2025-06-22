@@ -130,7 +130,18 @@ var mjEnvRenderTemplate = ffi.NewFFI(ffi.FFIOpts{
 			err = parseError(ctx, result.error)
 			return
 		}
+		defer mjStrFree.Symbol(ctx)(result.result)
 		rendered = ffi.BytePtrToString(result.result)
 		return
 	}
 })
+
+var mjStrFree = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_str_free",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(*byte) {
+	return func(ptr *byte) {
+		ffiCall(nil, unsafe.Pointer(&ptr))
+	}
+}, true)
