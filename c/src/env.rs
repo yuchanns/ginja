@@ -95,7 +95,11 @@ pub unsafe extern "C" fn mj_env_add_template(
             .expect("malformed template")
     };
     let env_arc = unsafe { &*env }.deref();
-    match env_arc.write().unwrap().add_template(name, source) {
+    match env_arc
+        .write()
+        .unwrap()
+        .add_template_owned(name.to_string(), source)
+    {
         Ok(_) => mj_result_env_add_template {
             error: std::ptr::null_mut(),
         },

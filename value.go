@@ -281,21 +281,20 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 		err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 	case nil:
 		err = nil
+	case []any:
+		err = &Error{
+			code:    CodeBadSerialization,
+			message: "cannot serialize []any",
+		}
 	default:
 		rv := reflect.ValueOf(val)
-		if rv.Kind() == reflect.Ptr {
+		for rv.Kind() == reflect.Ptr {
 			rv = rv.Elem()
 		}
 		switch rv.Kind() {
 		case reflect.Map:
 			nested := v.newNested(ctx)
-			for _, key := range rv.MapKeys() {
-				mapValue := rv.MapIndex(key)
-				err = nested.set(ctx, key.String(), mapValue.Interface())
-				if err != nil {
-					return
-				}
-			}
+			err = nested.setMapFields(ctx, rv)
 			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 		case reflect.Struct:
 			nested := v.newNested(ctx)
@@ -305,22 +304,34 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 			}
 			err = mjValueSetValue.Symbol(ctx)(value, key, nested.inner)
 		case reflect.Slice:
-			// Handle slice of structs
 			values := make([]*mjValue, 0, rv.Len())
 			for i := range rv.Len() {
 				elem := rv.Index(i)
-				if elem.Kind() == reflect.Ptr {
+				for elem.Kind() == reflect.Ptr {
 					elem = elem.Elem()
 				}
-				if elem.Kind() != reflect.Struct {
-					continue // skip non-struct elements
-				}
-				nested := v.newNested(ctx)
-				err = nested.setStructFields(ctx, elem)
-				if err != nil {
+				switch elem.Kind() {
+				case reflect.Struct: // []MyStruct
+					nested := v.newNested(ctx)
+					err = nested.setStructFields(ctx, elem)
+					if err != nil {
+						return
+					}
+					values = append(values, nested.inner)
+				case reflect.Map: // []map
+					nested := v.newNested(ctx)
+					err = nested.setMapFields(ctx, elem)
+					if err != nil {
+						return
+					}
+					values = append(values, nested.inner)
+				case reflect.Array, reflect.Slice:
+					err = &Error{
+						code:    CodeBadSerialization,
+						message: "cannot serialize slice of slices",
+					}
 					return
 				}
-				values = append(values, nested.inner)
 			}
 			err = mjValueSetListValue.Symbol(ctx)(value, key, values)
 		default:
@@ -328,6 +339,17 @@ func (v *value) set(ctx context.Context, key string, val any) (err error) {
 				code:    CodeBadSerialization,
 				message: fmt.Sprintf("cannot serialize value of type %s", rv.Type()),
 			}
+		}
+	}
+	return
+}
+
+func (value *value) setMapFields(ctx context.Context, rv reflect.Value) (err error) {
+	for _, key := range rv.MapKeys() {
+		mapValue := rv.MapIndex(key)
+		err = value.set(ctx, key.String(), mapValue.Interface())
+		if err != nil {
+			return
 		}
 	}
 	return

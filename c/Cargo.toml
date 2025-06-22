@@ -15,4 +15,4 @@ doc = false
 cbindgen = "0.29.0"
 
 [dependencies]
-minijinja = "2.10.2"
+minijinja = { version="2.10.2", features=["loader"] }
