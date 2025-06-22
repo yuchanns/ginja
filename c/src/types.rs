@@ -854,6 +854,155 @@ impl mj_value {
     pub unsafe extern "C" fn mj_value_append_bool(&mut self, val: bool) {
         unsafe { self.append(val) }
     }
+
+    /// \brief Sets multiple string key-value pairs in the value map in a single operation.
+    ///
+    /// This function efficiently sets multiple string key-value pairs at once,
+    /// reducing the number of FFI calls needed compared to calling mj_value_set_string
+    /// multiple times.
+    ///
+    /// @param keys Pointer to an array of null-terminated string pointers (keys)
+    /// @param vals Pointer to an array of null-terminated string pointers (values)
+    /// @param len Number of key-value pairs to set
+    ///
+    /// \note All parameters must not be NULL and len must be greater than 0.
+    /// \note The keys and vals arrays must have exactly len elements each.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_batch_string(
+        &mut self,
+        keys: *const *const c_char,
+        vals: *const *const c_char,
+        len: usize,
+    ) {
+        assert!(!keys.is_null());
+        assert!(!vals.is_null());
+        assert!(len > 0);
+
+        let map = self.deref_as_map_mut().unwrap();
+        
+        for i in 0..len {
+            let key = unsafe {
+                std::ffi::CStr::from_ptr(*keys.add(i))
+                    .to_str()
+                    .expect("malformed key")
+            };
+            let val = unsafe {
+                std::ffi::CStr::from_ptr(*vals.add(i))
+                    .to_str()
+                    .expect("malformed value")
+            };
+            map.insert(key.into(), val.into());
+        }
+    }
+
+    /// \brief Sets multiple integer key-value pairs in the value map in a single operation.
+    ///
+    /// This function efficiently sets multiple 64-bit signed integer key-value pairs at once,
+    /// reducing the number of FFI calls needed compared to calling mj_value_set_int
+    /// multiple times.
+    ///
+    /// @param keys Pointer to an array of null-terminated string pointers (keys)
+    /// @param vals Pointer to an array of 64-bit signed integers (values)
+    /// @param len Number of key-value pairs to set
+    ///
+    /// \note All parameters must not be NULL and len must be greater than 0.
+    /// \note The keys array must have len elements, vals array must have len elements.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_batch_int(
+        &mut self,
+        keys: *const *const c_char,
+        vals: *const i64,
+        len: usize,
+    ) {
+        assert!(!keys.is_null());
+        assert!(!vals.is_null());
+        assert!(len > 0);
+
+        let map = self.deref_as_map_mut().unwrap();
+        
+        for i in 0..len {
+            let key = unsafe {
+                std::ffi::CStr::from_ptr(*keys.add(i))
+                    .to_str()
+                    .expect("malformed key")
+            };
+            let val = unsafe { *vals.add(i) };
+            map.insert(key.into(), val.into());
+        }
+    }
+
+    /// \brief Sets multiple floating-point key-value pairs in the value map in a single operation.
+    ///
+    /// This function efficiently sets multiple 64-bit floating-point key-value pairs at once,
+    /// reducing the number of FFI calls needed compared to calling mj_value_set_float
+    /// multiple times.
+    ///
+    /// @param keys Pointer to an array of null-terminated string pointers (keys)
+    /// @param vals Pointer to an array of 64-bit floating-point values (values)
+    /// @param len Number of key-value pairs to set
+    ///
+    /// \note All parameters must not be NULL and len must be greater than 0.
+    /// \note The keys array must have len elements, vals array must have len elements.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_batch_float(
+        &mut self,
+        keys: *const *const c_char,
+        vals: *const f64,
+        len: usize,
+    ) {
+        assert!(!keys.is_null());
+        assert!(!vals.is_null());
+        assert!(len > 0);
+
+        let map = self.deref_as_map_mut().unwrap();
+        
+        for i in 0..len {
+            let key = unsafe {
+                std::ffi::CStr::from_ptr(*keys.add(i))
+                    .to_str()
+                    .expect("malformed key")
+            };
+            let val = unsafe { *vals.add(i) };
+            map.insert(key.into(), val.into());
+        }
+    }
+
+    /// \brief Sets multiple boolean key-value pairs in the value map in a single operation.
+    ///
+    /// This function efficiently sets multiple boolean key-value pairs at once,
+    /// reducing the number of FFI calls needed compared to calling mj_value_set_bool
+    /// multiple times.
+    ///
+    /// @param keys Pointer to an array of null-terminated string pointers (keys)
+    /// @param vals Pointer to an array of 32-bit integers representing boolean values (values)
+    /// @param len Number of key-value pairs to set
+    ///
+    /// \note All parameters must not be NULL and len must be greater than 0.
+    /// \note The keys array must have len elements, vals array must have len elements.
+    /// \note Boolean values should be represented as integers: 0 for false, non-zero for true.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn mj_value_set_batch_bool(
+        &mut self,
+        keys: *const *const c_char,
+        vals: *const i32,
+        len: usize,
+    ) {
+        assert!(!keys.is_null());
+        assert!(!vals.is_null());
+        assert!(len > 0);
+
+        let map = self.deref_as_map_mut().unwrap();
+        
+        for i in 0..len {
+            let key = unsafe {
+                std::ffi::CStr::from_ptr(*keys.add(i))
+                    .to_str()
+                    .expect("malformed key")
+            };
+            let val = unsafe { *vals.add(i) != 0 };
+            map.insert(key.into(), val.into());
+        }
+    }
 }
 
 /// \brief Defines how the template environment handles undefined variables and expressions.

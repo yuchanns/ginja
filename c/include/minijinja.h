@@ -1087,6 +1087,83 @@ void mj_value_append_float32(struct mj_value *self, float val);
  */
 void mj_value_append_bool(struct mj_value *self, bool val);
 
+/**
+ * \brief Sets multiple string key-value pairs in the value map in a single operation.
+ *
+ * This function efficiently sets multiple string key-value pairs at once,
+ * reducing the number of FFI calls needed compared to calling mj_value_set_string
+ * multiple times.
+ *
+ * @param keys Pointer to an array of null-terminated string pointers (keys)
+ * @param vals Pointer to an array of null-terminated string pointers (values)
+ * @param len Number of key-value pairs to set
+ *
+ * \note All parameters must not be NULL and len must be greater than 0.
+ * \note The keys and vals arrays must have exactly len elements each.
+ */
+void mj_value_set_batch_string(struct mj_value *self,
+                               const char *const *keys,
+                               const char *const *vals,
+                               uintptr_t len);
+
+/**
+ * \brief Sets multiple integer key-value pairs in the value map in a single operation.
+ *
+ * This function efficiently sets multiple 64-bit signed integer key-value pairs at once,
+ * reducing the number of FFI calls needed compared to calling mj_value_set_int
+ * multiple times.
+ *
+ * @param keys Pointer to an array of null-terminated string pointers (keys)
+ * @param vals Pointer to an array of 64-bit signed integers (values)
+ * @param len Number of key-value pairs to set
+ *
+ * \note All parameters must not be NULL and len must be greater than 0.
+ * \note The keys array must have len elements, vals array must have len elements.
+ */
+void mj_value_set_batch_int(struct mj_value *self,
+                            const char *const *keys,
+                            const int64_t *vals,
+                            uintptr_t len);
+
+/**
+ * \brief Sets multiple floating-point key-value pairs in the value map in a single operation.
+ *
+ * This function efficiently sets multiple 64-bit floating-point key-value pairs at once,
+ * reducing the number of FFI calls needed compared to calling mj_value_set_float
+ * multiple times.
+ *
+ * @param keys Pointer to an array of null-terminated string pointers (keys)
+ * @param vals Pointer to an array of 64-bit floating-point values (values)
+ * @param len Number of key-value pairs to set
+ *
+ * \note All parameters must not be NULL and len must be greater than 0.
+ * \note The keys array must have len elements, vals array must have len elements.
+ */
+void mj_value_set_batch_float(struct mj_value *self,
+                              const char *const *keys,
+                              const double *vals,
+                              uintptr_t len);
+
+/**
+ * \brief Sets multiple boolean key-value pairs in the value map in a single operation.
+ *
+ * This function efficiently sets multiple boolean key-value pairs at once,
+ * reducing the number of FFI calls needed compared to calling mj_value_set_bool
+ * multiple times.
+ *
+ * @param keys Pointer to an array of null-terminated string pointers (keys)
+ * @param vals Pointer to an array of 32-bit integers representing boolean values (values)
+ * @param len Number of key-value pairs to set
+ *
+ * \note All parameters must not be NULL and len must be greater than 0.
+ * \note The keys array must have len elements, vals array must have len elements.
+ * \note Boolean values should be represented as integers: 0 for false, non-zero for true.
+ */
+void mj_value_set_batch_bool(struct mj_value *self,
+                             const char *const *keys,
+                             const int32_t *vals,
+                             uintptr_t len);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

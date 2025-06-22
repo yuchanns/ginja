@@ -211,24 +211,51 @@ func (v *value) setBatchSpecialized(ctx context.Context, data map[string]any) er
 		}
 	}
 
-	// Process fast path types first (most efficient)
-	for k, val := range strings {
-		if err := mjValueSetString.Symbol(ctx)(v.inner, k, val); err != nil {
+	// Process fast path types first using batch operations (most efficient)
+	if len(strings) > 0 {
+		keys := make([]string, 0, len(strings))
+		vals := make([]string, 0, len(strings))
+		for k, val := range strings {
+			keys = append(keys, k)
+			vals = append(vals, val)
+		}
+		if err := mjValueSetBatchString.Symbol(ctx)(v.inner, keys, vals); err != nil {
 			return err
 		}
 	}
-	for k, val := range ints {
-		if err := mjValueSetInt.Symbol(ctx)(v.inner, k, val); err != nil {
+	
+	if len(ints) > 0 {
+		keys := make([]string, 0, len(ints))
+		vals := make([]int64, 0, len(ints))
+		for k, val := range ints {
+			keys = append(keys, k)
+			vals = append(vals, val)
+		}
+		if err := mjValueSetBatchInt.Symbol(ctx)(v.inner, keys, vals); err != nil {
 			return err
 		}
 	}
-	for k, val := range floats {
-		if err := mjValueSetFloat.Symbol(ctx)(v.inner, k, val); err != nil {
+	
+	if len(floats) > 0 {
+		keys := make([]string, 0, len(floats))
+		vals := make([]float64, 0, len(floats))
+		for k, val := range floats {
+			keys = append(keys, k)
+			vals = append(vals, val)
+		}
+		if err := mjValueSetBatchFloat.Symbol(ctx)(v.inner, keys, vals); err != nil {
 			return err
 		}
 	}
-	for k, val := range bools {
-		if err := mjValueSetBool.Symbol(ctx)(v.inner, k, val); err != nil {
+	
+	if len(bools) > 0 {
+		keys := make([]string, 0, len(bools))
+		vals := make([]bool, 0, len(bools))
+		for k, val := range bools {
+			keys = append(keys, k)
+			vals = append(vals, val)
+		}
+		if err := mjValueSetBatchBool.Symbol(ctx)(v.inner, keys, vals); err != nil {
 			return err
 		}
 	}
@@ -1595,6 +1622,156 @@ var mjValueAppendValue = ffi.NewFFI(ffi.FFIOpts{
 			defer mjValueFree.Symbol(ctx)(val)
 		}
 		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&val))
+		return
+	}
+})
+
+// Batch set FFI bindings for improved performance
+var mjValueSetBatchString = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_batch_string",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, keys []string, vals []string) (err error) {
+	return func(value *mjValue, keys []string, vals []string) (err error) {
+		if len(keys) != len(vals) {
+			return &Error{
+				code:    CodeBadSerialization,
+				message: "keys and values length mismatch",
+			}
+		}
+		if len(keys) == 0 {
+			return nil
+		}
+
+		// Convert keys to C strings
+		keyPtrs := make([]*byte, len(keys))
+		for i, key := range keys {
+			keyPtrs[i], err = ffi.BytePtrFromString(key)
+			if err != nil {
+				return
+			}
+		}
+
+		// Convert values to C strings
+		valPtrs := make([]*byte, len(vals))
+		for i, val := range vals {
+			valPtrs[i], err = ffi.BytePtrFromString(val)
+			if err != nil {
+				return
+			}
+		}
+
+		keyPtr := unsafe.Pointer(&keyPtrs[0])
+		valPtr := unsafe.Pointer(&valPtrs[0])
+		length := len(keys)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetBatchInt = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_batch_int",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, keys []string, vals []int64) (err error) {
+	return func(value *mjValue, keys []string, vals []int64) (err error) {
+		if len(keys) != len(vals) {
+			return &Error{
+				code:    CodeBadSerialization,
+				message: "keys and values length mismatch",
+			}
+		}
+		if len(keys) == 0 {
+			return nil
+		}
+
+		// Convert keys to C strings
+		keyPtrs := make([]*byte, len(keys))
+		for i, key := range keys {
+			keyPtrs[i], err = ffi.BytePtrFromString(key)
+			if err != nil {
+				return
+			}
+		}
+
+		keyPtr := unsafe.Pointer(&keyPtrs[0])
+		valPtr := unsafe.Pointer(&vals[0])
+		length := len(keys)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetBatchFloat = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_batch_float",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, keys []string, vals []float64) (err error) {
+	return func(value *mjValue, keys []string, vals []float64) (err error) {
+		if len(keys) != len(vals) {
+			return &Error{
+				code:    CodeBadSerialization,
+				message: "keys and values length mismatch",
+			}
+		}
+		if len(keys) == 0 {
+			return nil
+		}
+
+		// Convert keys to C strings
+		keyPtrs := make([]*byte, len(keys))
+		for i, key := range keys {
+			keyPtrs[i], err = ffi.BytePtrFromString(key)
+			if err != nil {
+				return
+			}
+		}
+
+		keyPtr := unsafe.Pointer(&keyPtrs[0])
+		valPtr := unsafe.Pointer(&vals[0])
+		length := len(keys)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
+		return
+	}
+})
+
+var mjValueSetBatchBool = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_value_set_batch_bool",
+	RType:  &jffi.TypeVoid,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
+}, func(ctx context.Context, ffiCall ffi.Call) func(value *mjValue, keys []string, vals []bool) (err error) {
+	return func(value *mjValue, keys []string, vals []bool) (err error) {
+		if len(keys) != len(vals) {
+			return &Error{
+				code:    CodeBadSerialization,
+				message: "keys and values length mismatch",
+			}
+		}
+		if len(keys) == 0 {
+			return nil
+		}
+
+		// Convert keys to C strings
+		keyPtrs := make([]*byte, len(keys))
+		for i, key := range keys {
+			keyPtrs[i], err = ffi.BytePtrFromString(key)
+			if err != nil {
+				return
+			}
+		}
+
+		// Convert bools to int32 array for C
+		int32Vals := make([]int32, len(vals))
+		for i, val := range vals {
+			if val {
+				int32Vals[i] = 1
+			}
+		}
+
+		keyPtr := unsafe.Pointer(&keyPtrs[0])
+		valPtr := unsafe.Pointer(&int32Vals[0])
+		length := len(keys)
+		ffiCall(nil, unsafe.Pointer(&value), unsafe.Pointer(&keyPtr), unsafe.Pointer(&valPtr), unsafe.Pointer(&length))
 		return
 	}
 })
