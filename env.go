@@ -2,6 +2,9 @@ package ginja
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
+	"sync"
 	"unsafe"
 
 	jffi "github.com/jupiterrider/ffi"
@@ -9,11 +12,20 @@ import (
 	"go.yuchanns.xyz/ginja/internal/ffi"
 )
 
+type templateCacheEntry struct {
+	source string
+	hash   string
+}
+
 type Environment struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	inner *mjEnv
+	
+	// Template cache to avoid recompiling same templates
+	templateCache map[string]*templateCacheEntry
+	cacheMutex    sync.RWMutex
 }
 
 func New() (env *Environment, err error) {
@@ -27,9 +39,10 @@ func New() (env *Environment, err error) {
 	}
 	inner := mjEnvNew.Symbol(ctx)()
 	env = &Environment{
-		ctx:    ctx,
-		cancel: cancel,
-		inner:  inner,
+		ctx:           ctx,
+		cancel:        cancel,
+		inner:         inner,
+		templateCache: make(map[string]*templateCacheEntry),
 	}
 	return
 }
@@ -46,18 +59,44 @@ func (env *Environment) Close() {
 }
 
 func (env *Environment) AddTemplate(name string, source string) (err error) {
-	return mjEnvAddTemplate.Symbol(env.ctx)(env.inner, name, source)
+	// Check if template is already cached with the same content
+	hash := fmt.Sprintf("%x", md5.Sum([]byte(source)))
+	
+	env.cacheMutex.RLock()
+	if cached, exists := env.templateCache[name]; exists {
+		if cached.hash == hash {
+			// Template unchanged, no need to recompile
+			env.cacheMutex.RUnlock()
+			return nil
+		}
+	}
+	env.cacheMutex.RUnlock()
+	
+	// Template is new or changed, compile it
+	err = mjEnvAddTemplate.Symbol(env.ctx)(env.inner, name, source)
+	if err != nil {
+		return err
+	}
+	
+	// Cache the template
+	env.cacheMutex.Lock()
+	env.templateCache[name] = &templateCacheEntry{
+		source: source,
+		hash:   hash,
+	}
+	env.cacheMutex.Unlock()
+	
+	return nil
 }
 
 func (env *Environment) RenderTemplate(name string, ctx map[string]any) (rendered string, err error) {
 	value := newValue(env.ctx)
 	defer value.free(env.ctx)
 
-	for k, v := range ctx {
-		err = value.set(env.ctx, k, v)
-		if err != nil {
-			return
-		}
+	// Pre-process and batch similar operations to reduce FFI overhead
+	err = value.setBatch(env.ctx, ctx)
+	if err != nil {
+		return
 	}
 
 	return mjEnvRenderTemplate.Symbol(env.ctx)(env.inner, name, value.inner)

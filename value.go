@@ -3,6 +3,7 @@ package ginja
 import (
 	"context"
 	"fmt"
+	"sync"
 	"unsafe"
 
 	jffi "github.com/jupiterrider/ffi"
@@ -16,16 +17,27 @@ type value struct {
 	values []*value
 }
 
+// valuePool is a pool for reusing value objects
+var valuePool = sync.Pool{
+	New: func() any {
+		return &value{
+			values: make([]*value, 0, 4), // Pre-allocate with small capacity
+		}
+	},
+}
+
 func newValue(ctx context.Context) *value {
-	return &value{
-		inner: mjValueNew.Symbol(ctx)(),
-	}
+	v := valuePool.Get().(*value)
+	v.inner = mjValueNew.Symbol(ctx)()
+	v.values = v.values[:0] // Reset slice but keep capacity
+	return v
 }
 
 func newValueList(ctx context.Context) *value {
-	return &value{
-		inner: mjValueNewList.Symbol(ctx)(),
-	}
+	v := valuePool.Get().(*value)
+	v.inner = mjValueNewList.Symbol(ctx)()
+	v.values = v.values[:0] // Reset slice but keep capacity
+	return v
 }
 
 func (v *value) newNested(ctx context.Context) *value {
@@ -49,6 +61,208 @@ func (v *value) free(ctx context.Context) {
 	}
 	mjValueFree.Symbol(ctx)(v.inner)
 	v.inner = nil
+	// Return to pool for reuse
+	valuePool.Put(v)
+}
+
+// setBatch optimizes setting multiple key-value pairs by grouping operations by type
+func (v *value) setBatch(ctx context.Context, data map[string]any) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	// Use type specialization for fast paths
+	return v.setBatchSpecialized(ctx, data)
+}
+
+// setBatchSpecialized implements fast paths for common types to avoid reflection
+func (v *value) setBatchSpecialized(ctx context.Context, data map[string]any) error {
+	// Group data by type to minimize FFI calls and enable batch operations
+	strings := make(map[string]string)
+	ints := make(map[string]int64)
+	floats := make(map[string]float64)
+	bools := make(map[string]bool)
+	stringSlices := make(map[string][]string)
+	intSlices := make(map[string][]int64)
+	floatSlices := make(map[string][]float64)
+	boolSlices := make(map[string][]bool)
+	others := make(map[string]any)
+
+	// Sort data by type with extended type specialization
+	for k, val := range data {
+		switch v := val.(type) {
+		// String types (fast path)
+		case string:
+			strings[k] = v
+		case *string:
+			if v != nil {
+				strings[k] = *v
+			}
+		// Integer types (fast path)
+		case int:
+			ints[k] = int64(v)
+		case *int:
+			if v != nil {
+				ints[k] = int64(*v)
+			}
+		case int64:
+			ints[k] = v
+		case *int64:
+			if v != nil {
+				ints[k] = *v
+			}
+		case int32:
+			ints[k] = int64(v)
+		case *int32:
+			if v != nil {
+				ints[k] = int64(*v)
+			}
+		case int16:
+			ints[k] = int64(v)
+		case *int16:
+			if v != nil {
+				ints[k] = int64(*v)
+			}
+		case int8:
+			ints[k] = int64(v)
+		case *int8:
+			if v != nil {
+				ints[k] = int64(*v)
+			}
+		case uint:
+			// Use fallback for uint to preserve original behavior
+			others[k] = val
+		case *uint:
+			// Use fallback for *uint to preserve original behavior
+			others[k] = val
+		case uint64:
+			// Use fallback for uint64 to preserve original behavior
+			others[k] = val
+		case *uint64:
+			// Use fallback for *uint64 to preserve original behavior
+			others[k] = val
+		case uint32:
+			// Use fallback for uint32 to preserve original behavior
+			others[k] = val
+		case *uint32:
+			// Use fallback for *uint32 to preserve original behavior
+			others[k] = val
+		case uint16:
+			ints[k] = int64(v)
+		case *uint16:
+			if v != nil {
+				ints[k] = int64(*v)
+			}
+		case uint8:
+			ints[k] = int64(v)
+		case *uint8:
+			if v != nil {
+				ints[k] = int64(*v)
+			}
+		// Float types (fast path)
+		case float64:
+			floats[k] = v
+		case *float64:
+			if v != nil {
+				floats[k] = *v
+			}
+		case float32:
+			floats[k] = float64(v)
+		case *float32:
+			if v != nil {
+				floats[k] = float64(*v)
+			}
+		// Bool types (fast path)
+		case bool:
+			bools[k] = v
+		case *bool:
+			if v != nil {
+				bools[k] = *v
+			}
+		// Slice types (specialized fast paths)
+		case []string:
+			stringSlices[k] = v
+		case []int:
+			converted := make([]int64, len(v))
+			for i, item := range v {
+				converted[i] = int64(item)
+			}
+			intSlices[k] = converted
+		case []int64:
+			intSlices[k] = v
+		case []int32:
+			converted := make([]int64, len(v))
+			for i, item := range v {
+				converted[i] = int64(item)
+			}
+			intSlices[k] = converted
+		case []float64:
+			floatSlices[k] = v
+		case []float32:
+			converted := make([]float64, len(v))
+			for i, item := range v {
+				converted[i] = float64(item)
+			}
+			floatSlices[k] = converted
+		case []bool:
+			boolSlices[k] = v
+		default:
+			others[k] = val
+		}
+	}
+
+	// Process fast path types first (most efficient)
+	for k, val := range strings {
+		if err := mjValueSetString.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+	for k, val := range ints {
+		if err := mjValueSetInt.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+	for k, val := range floats {
+		if err := mjValueSetFloat.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+	for k, val := range bools {
+		if err := mjValueSetBool.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+
+	// Process slice fast paths
+	for k, val := range stringSlices {
+		if err := mjValueSetListString.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+	for k, val := range intSlices {
+		if err := mjValueSetListInt.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+	for k, val := range floatSlices {
+		if err := mjValueSetListFloat.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+	for k, val := range boolSlices {
+		if err := mjValueSetListBool.Symbol(ctx)(v.inner, k, val); err != nil {
+			return err
+		}
+	}
+
+	// Finally process complex types (slowest path using reflection)
+	for k, val := range others {
+		if err := v.set(ctx, k, val); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (v *value) append(ctx context.Context, val any) (err error) {

@@ -3,6 +3,7 @@ package ffi
 import (
 	"context"
 	"errors"
+	"sync"
 	"unsafe"
 
 	"github.com/jupiterrider/ffi"
@@ -27,12 +28,16 @@ type ContextWithFFI func(ctx context.Context, lib uintptr) (context.Context, err
 type FFI[T any] struct {
 	opts     FFIOpts
 	withFunc func(ctx context.Context, ffiCall Call) T
+
+	symbolCache *T
+	once        *sync.Once
 }
 
 func NewFFI[T any](opts FFIOpts, withFunc func(ctx context.Context, ffiCall Call) T, prepend ...bool) *FFI[T] {
 	ffi := &FFI[T]{
 		opts:     opts,
 		withFunc: withFunc,
+		once:     &sync.Once{},
 	}
 	if len(prepend) > 0 && prepend[0] {
 		withFFIs = append([]ContextWithFFI{ffi.WithFFI}, withFFIs...)
@@ -43,7 +48,11 @@ func NewFFI[T any](opts FFIOpts, withFunc func(ctx context.Context, ffiCall Call
 }
 
 func (f *FFI[T]) Symbol(ctx context.Context) T {
-	return ctx.Value(f.opts.Sym).(T)
+	f.once.Do(func() {
+		symbol := ctx.Value(f.opts.Sym).(T)
+		f.symbolCache = &symbol
+	})
+	return *f.symbolCache
 }
 
 func (f *FFI[T]) WithFFI(ctx context.Context, lib uintptr) (context.Context, error) {
