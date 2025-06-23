@@ -1,4 +1,21 @@
-.PHONY: tests clean build-current c_tests bench
+# Licensed under the MIT License
+# Copyright (c) 2024 ginja project contributors
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+.PHONY: tests clean c-tests bench help check-deps
+
+# =============================================================================
+# Platform Detection
+# =============================================================================
 
 # Detect current OS and architecture
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -12,95 +29,124 @@ ifeq ($(ARCH),aarch64)
     ARCH := arm64
 endif
 
-# Define file extensions and prefixes for different OS
+# Define file extensions for different OS
 ifeq ($(OS),linux)
     LIB_PREFIX := lib
     LIB_EXT := so
-    RUST_TARGET_SUFFIX := 
-endif
-ifeq ($(OS),darwin)
+else ifeq ($(OS),darwin)
     LIB_PREFIX := lib
     LIB_EXT := dylib
-    RUST_TARGET_SUFFIX := 
-endif
-ifeq ($(OS),mingw64_nt)
-    OS := windows
+else
     LIB_PREFIX := 
     LIB_EXT := dll
-    RUST_TARGET_SUFFIX := .exe
-endif
-ifeq ($(findstring mingw,$(OS)),mingw)
     OS := windows
-    LIB_PREFIX := 
-    LIB_EXT := dll
-    RUST_TARGET_SUFFIX := .exe
-endif
-ifeq ($(findstring msys,$(OS)),msys)
-    OS := windows
-    LIB_PREFIX := 
-    LIB_EXT := dll
-    RUST_TARGET_SUFFIX := .exe
 endif
 
-# Define Rust targets for cross-compilation
-RUST_TARGET_linux_amd64 := x86_64-unknown-linux-gnu
-RUST_TARGET_linux_arm64 := aarch64-unknown-linux-gnu
-RUST_TARGET_darwin_amd64 := x86_64-apple-darwin
-RUST_TARGET_darwin_arm64 := aarch64-apple-darwin
-RUST_TARGET_windows_amd64 := x86_64-pc-windows-gnu
-RUST_TARGET_windows_arm64 := aarch64-pc-windows-gnu
+# =============================================================================
+# Build Configuration
+# =============================================================================
 
-# Current target based on detected OS and ARCH
-CURRENT_TARGET := $(RUST_TARGET_$(OS)_$(ARCH))
+# Library file paths - use default target/debug directory
+C_LIB_DIR := c/target/debug
+C_LIB_FILE := $(C_LIB_DIR)/$(LIB_PREFIX)minijinja_c.$(LIB_EXT)
+EMBED_DIR := internal/embed
+COMPRESSED_LIB := $(EMBED_DIR)/$(LIB_PREFIX)minijinja_c.$(OS).$(ARCH).$(LIB_EXT).zst
 
-# Define library names for different platforms
-CURRENT_LIB_FILE := $(LIB_PREFIX)minijinja_c.$(LIB_EXT)
-CURRENT_COMPRESSED_FILE := $(LIB_PREFIX)minijinja_c.$(OS).$(ARCH).$(LIB_EXT).zst
+# Source files that trigger rebuilds
+RUST_SOURCES := $(wildcard c/src/*.rs) c/Cargo.toml
 
-# Cross-compilation targets
-define build_target
-c/target/$(2)/debug/$(3): c/src/*.rs c/Cargo.toml
-	@echo "Cross-compiling Rust library for $(1)..."
-	cd c && rustup target add $(2) && cargo build --target $(2)
+# =============================================================================
+# Dependency Checks
+# =============================================================================
 
-internal/embed/$(4): c/target/$(2)/debug/$(3)
-	@echo "Compressing library for $(1) with zstd..."
-	cd c && zstd -19 target/$(2)/debug/$(3) -o $(4)
-	@echo "Moving compressed library to embed directory..."
-	mv c/$(4) internal/embed/
-endef
+check-deps:
+	@echo "Checking required dependencies..."
+	@command -v cargo >/dev/null 2>&1 || { echo "Error: cargo is required but not installed"; exit 1; }
+	@command -v rustc >/dev/null 2>&1 || { echo "Error: rustc is required but not installed"; exit 1; }
+	@command -v go >/dev/null 2>&1 || { echo "Error: go is required but not installed"; exit 1; }
+	@command -v zstd >/dev/null 2>&1 || { echo "Error: zstd is required but not installed"; exit 1; }
+	@echo "All dependencies are available"
 
-# Generate build rules for all supported platforms
-$(eval $(call build_target,linux/amd64,$(RUST_TARGET_linux_amd64),libminijinja_c.so,libminijinja_c.linux.amd64.so.zst))
-$(eval $(call build_target,linux/arm64,$(RUST_TARGET_linux_arm64),libminijinja_c.so,libminijinja_c.linux.arm64.so.zst))
-$(eval $(call build_target,darwin/amd64,$(RUST_TARGET_darwin_amd64),libminijinja_c.dylib,libminijinja_c.darwin.amd64.dylib.zst))
-$(eval $(call build_target,darwin/arm64,$(RUST_TARGET_darwin_arm64),libminijinja_c.dylib,libminijinja_c.darwin.arm64.dylib.zst))
-$(eval $(call build_target,windows/amd64,$(RUST_TARGET_windows_amd64),minijinja_c.dll,minijinja_c.windows.amd64.dll.zst))
-$(eval $(call build_target,windows/arm64,$(RUST_TARGET_windows_arm64),minijinja_c.dll,minijinja_c.windows.arm64.dll.zst))
+# =============================================================================
+# Build Targets
+# =============================================================================
 
-# Build current platform
-build-current: internal/embed/$(CURRENT_COMPRESSED_FILE)
-	@echo "Built library for current platform: $(OS)/$(ARCH)"
+# Build C library for current platform
+$(C_LIB_FILE): $(RUST_SOURCES) | check-deps
+	@echo "Building Rust library for $(OS)/$(ARCH)..."
+	@echo "Compiling with cargo..."
+	cd c && cargo build
+ifeq ($(OS),windows)
+	@echo "Renaming Windows library file..."
+	@if [ -f "c/target/debug/minijinja_c.$(LIB_EXT)" ]; then \
+		mv "c/target/debug/minijinja_c.$(LIB_EXT)" "$(C_LIB_FILE)"; \
+	fi
+endif
 
-# Run tests with current platform library
-tests: build-current
+# Create compressed library
+$(COMPRESSED_LIB): $(C_LIB_FILE)
+	@echo "Compressing library for $(OS)/$(ARCH)..."
+	@mkdir -p $(EMBED_DIR)
+	zstd -19 $(C_LIB_FILE) -o $(COMPRESSED_LIB)
+	@echo "Library compressed and saved to $(COMPRESSED_LIB)"
+
+
+# =============================================================================
+# Test Targets
+# =============================================================================
+
+# Run Go tests
+tests: $(COMPRESSED_LIB)
 	@echo "Running Go tests..."
 	go test -race -gcflags=all=-d=checkptr -v .
 
-clean:
-	@echo "Cleaning build artifacts..."
-	cd c && cargo clean
-	rm -rf c/build
-	rm -f internal/embed/*.so.zst internal/embed/*.dylib.zst internal/embed/*.dll.zst
-	go clean -testcache
-
-c_tests:
+# Run C tests
+c-tests: check-deps
 	@echo "Building and running C tests..."
-	mkdir -p c/build
+	@mkdir -p c/build
 	cd c/build && cmake .. -DTEST_ENABLE_ASAN=ON
 	cd c/build && make tests
 
-bench:
+# Run benchmarks
+bench: $(COMPRESSED_LIB)
 	@echo "Running Go benchmarks..."
 	go test -bench=. -benchmem -count=6 -run=^$$ -v
+
+# =============================================================================
+# Maintenance Targets
+# =============================================================================
+
+# Clean all build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	@if [ -d "c/target" ]; then cd c && cargo clean; fi
+	@rm -rf c/build
+	@rm -f $(EMBED_DIR)/*.so.zst $(EMBED_DIR)/*.dylib.zst $(EMBED_DIR)/*.dll.zst
+	@go clean -testcache
+	@echo "Clean completed"
+
+# Show help information
+help:
+	@echo "Ginja Makefile - Build system for Go Jinja2 templating library"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  tests          - Run Go tests (builds current platform automatically)"
+	@echo "  c-tests        - Build and run C tests"
+	@echo "  bench          - Run Go benchmarks (builds current platform automatically)"
+	@echo "  clean          - Clean all build artifacts"
+	@echo "  check-deps     - Check if all required dependencies are installed"
+	@echo "  help           - Show this help message"
+	@echo ""
+	@echo "Current platform: $(OS)/$(ARCH)"
+	@echo ""
+	@echo "Dependencies:"
+	@echo "  - cargo (Rust toolchain)"
+	@echo "  - go (Go toolchain)"
+	@echo "  - zstd (compression tool)"
+	@echo "  - cmake (for C tests)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make tests           # Run tests (builds automatically)"
+	@echo "  make bench           # Run benchmarks"
+	@echo "  make clean           # Clean build files"
 
