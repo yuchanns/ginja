@@ -1,0 +1,55 @@
+name: Go Binding
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to release'
+        required: true
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Install build tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
+      - name: Install build tools (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install zstd libffi
+      - name: Install build tools (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Build and test
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            # https://github.com/ilammy/msvc-dev-cmd/issues/25
+            rm /usr/bin/link.exe
+          fi
+          make tests
+        env:
+          CGO_ENABLE: 0
+          RELEASE_MODE: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+

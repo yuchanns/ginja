@@ -46,8 +46,17 @@ endif
 # Build Configuration
 # =============================================================================
 
-# Library file paths - use default target/debug directory
-C_LIB_DIR := c/target/debug
+# Check if RELEASE_MODE is set
+ifeq ($(RELEASE_MODE),1)
+    BUILD_MODE := release
+    BUILD_FLAG := --release
+else
+    BUILD_MODE := debug
+    BUILD_FLAG := 
+endif
+
+# Library file paths
+C_LIB_DIR := c/target/$(BUILD_MODE)
 C_LIB_FILE := $(C_LIB_DIR)/$(LIB_PREFIX)minijinja_c.$(LIB_EXT)
 EMBED_DIR := internal/embed
 COMPRESSED_LIB := $(EMBED_DIR)/$(LIB_PREFIX)minijinja_c.$(OS).$(ARCH).$(LIB_EXT).zst
@@ -73,32 +82,27 @@ check-deps:
 
 # Build C library for current platform
 $(C_LIB_FILE): $(RUST_SOURCES) | check-deps
-	@echo "Building Rust library for $(OS)/$(ARCH)..."
-	@echo "Compiling with cargo..."
-	cd c && cargo build
-ifeq ($(OS),windows)
-	@echo "Renaming Windows library file..."
-	@if [ -f "c/target/debug/minijinja_c.$(LIB_EXT)" ]; then \
-		mv "c/target/debug/minijinja_c.$(LIB_EXT)" "$(C_LIB_FILE)"; \
-	fi
-endif
+	@echo "Building Rust library ($(BUILD_MODE)) for $(OS)/$(ARCH)..."
+	@echo "Compiling with cargo $(BUILD_FLAG)..."
+	cd c && cargo build $(BUILD_FLAG)
 
-# Create compressed library
+# Create compressed library (depends on RELEASE_MODE)
 $(COMPRESSED_LIB): $(C_LIB_FILE)
-	@echo "Compressing library for $(OS)/$(ARCH)..."
+	@echo "Compressing $(BUILD_MODE) library for $(OS)/$(ARCH)..."
 	@mkdir -p $(EMBED_DIR)
 	zstd -19 $(C_LIB_FILE) -o $(COMPRESSED_LIB)
-	@echo "Library compressed and saved to $(COMPRESSED_LIB)"
+	@echo "$(BUILD_MODE) library compressed and saved to $(COMPRESSED_LIB)"
 
 
 # =============================================================================
 # Test Targets
 # =============================================================================
 
-# Run Go tests
+# Run Go tests (supports RELEASE_MODE=1 for release build)
 tests: $(COMPRESSED_LIB)
-	@echo "Running Go tests..."
+	@echo "Running Go tests in $(BUILD_MODE) mode..."
 	go test -race -gcflags=all=-d=checkptr -v .
+
 
 # Run C tests
 c-tests: check-deps
@@ -130,12 +134,15 @@ help:
 	@echo "Ginja Makefile - Build system for Go Jinja2 templating library"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  tests          - Run Go tests (builds current platform automatically)"
+	@echo "  tests          - Run Go tests (default: debug build)"
 	@echo "  c-tests        - Build and run C tests"
 	@echo "  bench          - Run Go benchmarks (builds current platform automatically)"
 	@echo "  clean          - Clean all build artifacts"
 	@echo "  check-deps     - Check if all required dependencies are installed"
 	@echo "  help           - Show this help message"
+	@echo ""
+	@echo "Environment variables:"
+	@echo "  RELEASE_MODE=1 - Use release build instead of debug build"
 	@echo ""
 	@echo "Current platform: $(OS)/$(ARCH)"
 	@echo ""
@@ -146,7 +153,8 @@ help:
 	@echo "  - cmake (for C tests)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make tests           # Run tests (builds automatically)"
-	@echo "  make bench           # Run benchmarks"
-	@echo "  make clean           # Clean build files"
+	@echo "  make tests                    # Run tests in debug mode"
+	@echo "  RELEASE_MODE=1 make tests     # Run tests in release mode"
+	@echo "  make bench                    # Run benchmarks"
+	@echo "  make clean                    # Clean build files"
 
