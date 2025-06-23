@@ -20,6 +20,19 @@ Ginja aims to provide a more straightforward Go integration by:
 - **CGO-free approach**: Uses **purego + libffi** to eliminate CGO dependency, simplifying the build process and maintaining Go's cross-compilation capabilities
 - **Go-idiomatic API**: Designed to feel natural within Go codebases
 
+## Platform Support
+
+Ginja currently supports the following platforms:
+
+| Platform | Architecture | Notes |
+|----------|-------------|-------|
+| Linux | x86_64 | Ubuntu and compatible distributions |
+| Linux | aarch64 (ARM64) | Ubuntu and compatible distributions |
+| macOS | arm64 (Apple Silicon) | macOS 10.15+ |
+| Windows | x86_64 | Windows 10+ |
+
+The library includes pre-built native binaries for these platforms, eliminating the need for local compilation in most cases.
+
 ## Usage
 
 ```bash

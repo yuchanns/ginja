@@ -21,13 +21,13 @@ jobs:
       matrix:
         platform:
           - os: ubuntu-latest
-            artifact: libminijinja_c.linux.x86_64.so.zst
+            artifact: libminijinja_c.linux.amd64.so.zst
           - os: ubuntu-24.04-arm
-            artifact: libminijinja_c.linux.aarch64.so.zst
+            artifact: libminijinja_c.linux.arm64.so.zst
           - os: macos-latest
             artifact: libminijinja_c.darwin.arm64.dylib.zst
           - os: windows-latest
-            artifact: libminijinja_c.windows.x86_64.dll.zst
+            artifact: minijinja_c.windows.amd64.dll.zst
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
