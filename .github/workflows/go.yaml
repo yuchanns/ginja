@@ -85,25 +85,22 @@ jobs:
         with:
           path: internal/embed/
           merge-multiple: true
-      - name: Create Release Branch and Push
+      - name: Create Release Branch
         run: |
-          # Force add .zst files to staging area (they are ignored by .gitignore)
-          git add -f internal/embed/*.zst
-          
-          # Configure git user for tagging (use official GitHub Actions bot)
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
           # Create a temporary release branch
           RELEASE_BRANCH="release-${{ github.event.inputs.tag }}"
           git checkout -b $RELEASE_BRANCH
-          
-          # Commit the .zst files
-          git commit -m "Add prebuilt binaries for release ${{ github.event.inputs.tag }}"
-          
-          # Push the release branch
+
+          # Force add .zst files to staging area (they are ignored by .gitignore)
+          git add -f internal/embed/*.zst
+      - name: Commit Prebuilt Binaries
+        uses: qoomon/actions--create-commit@v1
+        with:
+          message: "Add prebuilt binaries for release ${{ github.event.inputs.tag }}"
+      - name: Push Release Branch
+        run: |
+          RELEASE_BRANCH="release-${{ github.event.inputs.tag }}"
           git push origin $RELEASE_BRANCH
-        
       - name: Create Release with GitHub API
         uses: actions/github-script@v7
         with:
@@ -117,23 +114,4 @@ jobs:
               draft: false,
               generate_release_notes: true
             });
-            
-      - name: Cleanup Release Branch
-        uses: actions/github-script@v7
-        with:
-          script: |
-            try {
-              await github.rest.git.deleteRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: 'heads/release-${{ github.event.inputs.tag }}'
-              });
-              console.log('Successfully deleted release branch');
-            } catch (error) {
-              if (error.status === 422) {
-                console.log('Branch already deleted or does not exist');
-              } else {
-                console.log('Error deleting branch:', error.message);
-              }
-            }
 
