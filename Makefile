@@ -101,7 +101,11 @@ $(COMPRESSED_LIB): $(C_LIB_FILE)
 # Run Go tests (supports RELEASE_MODE=1 for release build)
 tests: $(COMPRESSED_LIB)
 	@echo "Running Go tests in $(BUILD_MODE) mode..."
+ifeq ($(OS)-$(ARCH),windows-arm64)
+	go test -gcflags=all=-d=checkptr -v .
+else
 	go test -race -gcflags=all=-d=checkptr -v .
+endif
 
 
 # Run C tests
