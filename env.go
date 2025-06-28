@@ -100,12 +100,11 @@ func (env *Environment) RenderTemplate(name string, ctx map[string]any) (rendere
 
 var mjEnvNew = ffi.NewFFI(ffi.FFIOpts{
 	Sym:   "mj_env_new",
-	RType: typeResultMjEnvNew,
+	RType: &jffi.TypePointer,
 }, func(ctx context.Context, ffiCall ffi.Call) func() *mjEnv {
 	return func() *mjEnv {
-		var result resultMjEnvNew
-		ffiCall(unsafe.Pointer(&result))
-		env := result.env
+		var env = &mjEnv{}
+		ffiCall(unsafe.Pointer(&env))
 		return env
 	}
 })
@@ -122,7 +121,7 @@ var mjEnvFree = ffi.NewFFI(ffi.FFIOpts{
 
 var mjEnvAddTemplate = ffi.NewFFI(ffi.FFIOpts{
 	Sym:    "mj_env_add_template",
-	RType:  typeResultMjEnvAddTemplate,
+	RType:  &jffi.TypePointer,
 	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
 }, func(ctx context.Context, ffiCall ffi.Call) func(*mjEnv, string, string) error {
 	return func(env *mjEnv, name string, source string) (err error) {
@@ -134,13 +133,14 @@ var mjEnvAddTemplate = ffi.NewFFI(ffi.FFIOpts{
 		if err != nil {
 			return
 		}
-		var result resultMjEnvAddTemplate
+
+		var result *mjError
 		ffiCall(
 			unsafe.Pointer(&result), unsafe.Pointer(&env),
 			unsafe.Pointer(&namePtr), unsafe.Pointer(&sourcePtr),
 		)
-		if result.error != nil {
-			return parseError(ctx, result.error)
+		if result != nil {
+			return parseError(ctx, result)
 		}
 		return
 	}
@@ -165,7 +165,7 @@ var mjEnvRender = ffi.NewFFI(ffi.FFIOpts{
 		ffiCall(unsafe.Pointer(&result), unsafe.Pointer(&env), unsafe.Pointer(&np), unsafe.Pointer(&p), unsafe.Pointer(&size))
 		defer mjResultEnvRenderTemplateFree.Symbol(ctx)(result)
 		if result.error != nil {
-			err = parseError(ctx, result.error)
+			err = toError(result.error)
 			return
 		}
 		rendered = ffi.BytePtrToString(result.result)

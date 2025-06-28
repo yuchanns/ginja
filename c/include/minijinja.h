@@ -168,21 +168,6 @@ typedef struct mj_env {
 } mj_env;
 
 /**
- * \brief Result structure for mj_env_new function.
- *
- * This structure contains the result of creating a new MiniJinja environment.
- * On success, the env field contains a pointer to the newly created environment.
- *
- * @see mj_env_new Function that returns this result type
- */
-typedef struct mj_result_env_new {
-  /**
-   * Pointer to the newly created environment, or NULL on failure
-   */
-  struct mj_env *env;
-} mj_result_env_new;
-
-/**
  * \brief Represents a MiniJinja error with code and message information.
  *
  * This structure encapsulates error information from MiniJinja operations,
@@ -208,21 +193,6 @@ typedef struct mj_error {
    */
   const char *message;
 } mj_error;
-
-/**
- * \brief Result structure for mj_env_add_template function.
- *
- * This structure contains the result of adding a template to the environment.
- * On success, the error field is NULL. On failure, it contains error information.
- *
- * @see mj_env_add_template Function that returns this result type
- */
-typedef struct mj_result_env_add_template {
-  /**
-   * Pointer to error information, or NULL on success
-   */
-  struct mj_error *error;
-} mj_result_env_add_template;
 
 /**
  * \brief Result structure for template rendering functions.
@@ -265,7 +235,7 @@ void mj_env_free(struct mj_env *ptr);
  * \note The returned environment should be freed using mj_env_free when
  * no longer needed to prevent memory leaks.
  */
-struct mj_result_env_new mj_env_new(void);
+struct mj_env *mj_env_new(void);
 
 /**
  * \brief Adds a template to the environment with the given name and source code.
@@ -282,9 +252,7 @@ struct mj_result_env_new mj_env_new(void);
  *
  * \note Both name and source parameters must not be NULL.
  */
-struct mj_result_env_add_template mj_env_add_template(struct mj_env *env,
-                                                      const char *name,
-                                                      const char *source);
+struct mj_error *mj_env_add_template(struct mj_env *env, const char *name, const char *source);
 
 /**
  * \brief Removes a template from the environment by name.

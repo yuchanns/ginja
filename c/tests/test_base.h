@@ -7,15 +7,11 @@
 
 class MiniJinjaTest : public ::testing::Test {
 protected:
-  struct mj_result_env_new env_result;
   mj_env *env;
 
   void SetUp() override {
     // Set up code that will be called before each test
-    env_result = mj_env_new();
-    ASSERT_NE(env_result.env, nullptr)
-        << "Environment should not be null after creation";
-    env = env_result.env;
+    env = mj_env_new();
 
     // Ensure we can access the environment
     EXPECT_NE(env->inner, nullptr)

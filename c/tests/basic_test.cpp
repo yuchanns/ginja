@@ -4,10 +4,10 @@
 TEST_F(MiniJinjaTest, MultipleValuesInTemplate)
 {
     // Test using multiple different value types in one template
-    auto add_result = mj_env_add_template(env, "multi_template",
+    auto error = mj_env_add_template(env, "multi_template",
         "Name: {{ name }}, Age: {{ age }}, Score: {{ score "
         "}}, Active: {{ active }}");
-    EXPECT_EQ(add_result.error, nullptr);
+    EXPECT_EQ(error, nullptr);
 
     // Create JSON data with different types of values
     std::string json_data = R"({
@@ -27,8 +27,8 @@ TEST_F(MiniJinjaTest, MultipleValuesInTemplate)
 TEST_F(MiniJinjaTest, OverwriteValues)
 {
     // Test different value types using different templates
-    auto add_result = mj_env_add_template(env, "test_value", "Value: {{ val }}");
-    EXPECT_EQ(add_result.error, nullptr);
+    auto error = mj_env_add_template(env, "test_value", "Value: {{ val }}");
+    EXPECT_EQ(error, nullptr);
 
     // Test string value
     std::string json_data1 = R"({"val": "Hello"})";

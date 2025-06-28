@@ -11,9 +11,9 @@ TEST_F(MiniJinjaTest, WhitespaceControl)
     mj_env_set_trim_blocks(env, true);
     mj_env_set_lstrip_blocks(env, true);
 
-    auto add_result1 = mj_env_add_template(env, "lstrip_test",
+    auto error = mj_env_add_template(env, "lstrip_test",
         "{% if true %}\n    Hello\n    {% endif %}");
-    EXPECT_EQ(add_result1.error, nullptr);
+    EXPECT_EQ(error, nullptr);
 
     std::string json_data1 = "{}";
     auto render_result1 = renderTemplate("lstrip_test", json_data1);
@@ -24,9 +24,9 @@ TEST_F(MiniJinjaTest, WhitespaceControl)
 
     // Test trim_blocks option
     mj_env_set_trim_blocks(env, true);
-    auto add_result2 = mj_env_add_template(env, "trim_test",
+    error = mj_env_add_template(env, "trim_test",
         "{% for i in [1, 2] %}\nItem {{ i }}\n{% endfor %}");
-    EXPECT_EQ(add_result2.error, nullptr);
+    EXPECT_EQ(error, nullptr);
 
     std::string json_data2 = "{}";
     auto render_result2 = renderTemplate("trim_test", json_data2);
@@ -36,8 +36,8 @@ TEST_F(MiniJinjaTest, WhitespaceControl)
 
     // Test keep_trailing_newline option
     mj_env_set_keep_trailing_newline(env, false);
-    auto add_result3 = mj_env_add_template(env, "newline_test", "Hello\n");
-    EXPECT_EQ(add_result3.error, nullptr);
+    error = mj_env_add_template(env, "newline_test", "Hello\n");
+    EXPECT_EQ(error, nullptr);
 
     std::string json_data3 = "{}";
     auto render_result3 = renderTemplate("newline_test", json_data3);
@@ -51,10 +51,10 @@ TEST_F(MiniJinjaTest, SpecialOptions)
     // Test special environment options
     // Test recursion limit
     mj_env_set_recursion_limit(env, 2);
-    auto add_result1 = mj_env_add_template(env, "recursive_test",
+    auto error = mj_env_add_template(env, "recursive_test",
         "{% macro recursive(n) %}{{ recursive(n-1) }}{% "
         "endmacro %}{{ recursive(3) }}");
-    EXPECT_EQ(add_result1.error, nullptr);
+    EXPECT_EQ(error, nullptr);
 
     std::string json_data = "{}";
     auto render_result1 = renderTemplate("recursive_test", json_data);
@@ -68,9 +68,9 @@ TEST_F(MiniJinjaTest, UndefinedBehavior)
     // Test undefined behavior settings
     // Test MJ_UNDEFINED_BEHAVIOR_LENIENT (default)
     mj_env_set_undefined_behavior(env, MJ_UNDEFINED_BEHAVIOR_LENIENT);
-    auto add_result1 = mj_env_add_template(env, "lenient_test",
+    auto error = mj_env_add_template(env, "lenient_test",
         "{{ undefined_var }}");
-    EXPECT_EQ(add_result1.error, nullptr);
+    EXPECT_EQ(error, nullptr);
 
     std::string json_data1 = "{}";
     auto render_result1 = renderTemplate("lenient_test", json_data1);
@@ -90,9 +90,9 @@ TEST_F(MiniJinjaTest, UndefinedBehavior)
     // Test MJ_UNDEFINED_BEHAVIOR_CHAINABLE
     mj_env_set_undefined_behavior(env,
         MJ_UNDEFINED_BEHAVIOR_CHAINABLE);
-    auto add_result3 = mj_env_add_template(env, "chainable_test",
+    error = mj_env_add_template(env, "chainable_test",
         "{{ undefined_var.field }}");
-    EXPECT_EQ(add_result3.error, nullptr);
+    EXPECT_EQ(error, nullptr);
 
     std::string json_data3 = "{}";
     auto render_result3 = renderTemplate("chainable_test", json_data3);

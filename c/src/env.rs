@@ -54,14 +54,12 @@ impl mj_env {
 /// \note The returned environment should be freed using mj_env_free when
 /// no longer needed to prevent memory leaks.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mj_env_new() -> mj_result_env_new {
+pub unsafe extern "C" fn mj_env_new() -> *mut mj_env {
     let env = Environment::new();
     let env_arc = Arc::new(RwLock::new(env));
-    mj_result_env_new {
-        env: Box::into_raw(Box::new(mj_env {
-            inner: Box::into_raw(Box::new(env_arc)) as *mut c_void,
-        })),
-    }
+    Box::into_raw(Box::new(mj_env {
+        inner: Box::into_raw(Box::new(env_arc)) as *mut c_void,
+    }))
 }
 
 /// \brief Adds a template to the environment with the given name and source code.
@@ -82,7 +80,7 @@ pub unsafe extern "C" fn mj_env_add_template(
     env: *mut mj_env,
     name: *const c_char,
     source: *const c_char,
-) -> mj_result_env_add_template {
+) -> *mut mj_error {
     assert!(!name.is_null());
     assert!(!source.is_null());
     let name = unsafe {
@@ -101,12 +99,8 @@ pub unsafe extern "C" fn mj_env_add_template(
         .unwrap()
         .add_template_owned(name.to_string(), source)
     {
-        Ok(_) => mj_result_env_add_template {
-            error: std::ptr::null_mut(),
-        },
-        Err(e) => mj_result_env_add_template {
-            error: mj_error::new(e),
-        },
+        Ok(_) => std::ptr::null_mut(),
+        Err(e) => mj_error::new(e),
     }
 }
 

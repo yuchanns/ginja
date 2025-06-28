@@ -51,10 +51,21 @@ func (e *Error) Message() string {
 	return e.message
 }
 
+func toError(err *mjError) error {
+	if err == nil {
+		return nil
+	}
+	return &Error{
+		code:    ErrorCode(err.code),
+		message: ffi.BytePtrToString(err.message),
+	}
+}
+
 func parseError(ctx context.Context, err *mjError) error {
 	if err == nil {
 		return nil
 	}
+	defer mjErrorFree.Symbol(ctx)(err)
 	return &Error{
 		code:    ErrorCode(err.code),
 		message: ffi.BytePtrToString(err.message),
