@@ -3,6 +3,7 @@ package ginja
 import (
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"unsafe"
@@ -22,7 +23,7 @@ type Environment struct {
 	cancel context.CancelFunc
 
 	inner *mjEnv
-	
+
 	// Template cache to avoid recompiling same templates
 	templateCache map[string]*templateCacheEntry
 	cacheMutex    sync.RWMutex
@@ -61,7 +62,7 @@ func (env *Environment) Close() {
 func (env *Environment) AddTemplate(name string, source string) (err error) {
 	// Check if template is already cached with the same content
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(source)))
-	
+
 	env.cacheMutex.RLock()
 	if cached, exists := env.templateCache[name]; exists {
 		if cached.hash == hash {
@@ -71,13 +72,13 @@ func (env *Environment) AddTemplate(name string, source string) (err error) {
 		}
 	}
 	env.cacheMutex.RUnlock()
-	
+
 	// Template is new or changed, compile it
 	err = mjEnvAddTemplate.Symbol(env.ctx)(env.inner, name, source)
 	if err != nil {
 		return err
 	}
-	
+
 	// Cache the template
 	env.cacheMutex.Lock()
 	env.templateCache[name] = &templateCacheEntry{
@@ -85,21 +86,16 @@ func (env *Environment) AddTemplate(name string, source string) (err error) {
 		hash:   hash,
 	}
 	env.cacheMutex.Unlock()
-	
+
 	return nil
 }
 
 func (env *Environment) RenderTemplate(name string, ctx map[string]any) (rendered string, err error) {
-	value := newValue(env.ctx)
-	defer value.free(env.ctx)
-
-	// Pre-process and batch similar operations to reduce FFI overhead
-	err = value.setBatch(env.ctx, ctx)
+	value, err := json.Marshal(ctx)
 	if err != nil {
 		return
 	}
-
-	return mjEnvRenderTemplate.Symbol(env.ctx)(env.inner, name, value.inner)
+	return mjEnvRender.Symbol(env.ctx)(env.inner, name, value)
 }
 
 var mjEnvNew = ffi.NewFFI(ffi.FFIOpts{
@@ -150,37 +146,39 @@ var mjEnvAddTemplate = ffi.NewFFI(ffi.FFIOpts{
 	}
 })
 
-var mjEnvRenderTemplate = ffi.NewFFI(ffi.FFIOpts{
-	Sym:    "mj_env_render_template",
-	RType:  typeResultMjEnvRenderTemplate,
-	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer},
-}, func(ctx context.Context, ffiCall ffi.Call) func(*mjEnv, string, *mjValue) (string, error) {
-	return func(env *mjEnv, name string, value *mjValue) (rendered string, err error) {
-		namePtr, err := ffi.BytePtrFromString(name)
+var mjEnvRender = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_env_render",
+	RType:  &jffi.TypePointer,
+	ATypes: []*jffi.Type{&jffi.TypePointer, &jffi.TypePointer, &jffi.TypePointer, &jffi.TypeUint64},
+}, func(ctx context.Context, ffiCall ffi.Call) func(*mjEnv, string, []byte) (string, error) {
+	return func(env *mjEnv, name string, data []byte) (rendered string, err error) {
+		if len(data) == 0 {
+			return
+		}
+		np, err := ffi.BytePtrFromString(name)
 		if err != nil {
 			return
 		}
-		var result resultMjEnvRenderTemplate
-		ffiCall(
-			unsafe.Pointer(&result), unsafe.Pointer(&env),
-			unsafe.Pointer(&namePtr), unsafe.Pointer(&value),
-		)
+		p := &data[0]
+		size := uint(len(data))
+		var result = &resultMjEnvRenderTemplate{}
+		ffiCall(unsafe.Pointer(&result), unsafe.Pointer(&env), unsafe.Pointer(&np), unsafe.Pointer(&p), unsafe.Pointer(&size))
+		defer mjResultEnvRenderTemplateFree.Symbol(ctx)(result)
 		if result.error != nil {
 			err = parseError(ctx, result.error)
 			return
 		}
-		defer mjStrFree.Symbol(ctx)(result.result)
 		rendered = ffi.BytePtrToString(result.result)
 		return
 	}
 })
 
-var mjStrFree = ffi.NewFFI(ffi.FFIOpts{
-	Sym:    "mj_str_free",
+var mjResultEnvRenderTemplateFree = ffi.NewFFI(ffi.FFIOpts{
+	Sym:    "mj_result_env_render_template_free",
 	RType:  &jffi.TypeVoid,
 	ATypes: []*jffi.Type{&jffi.TypePointer},
-}, func(ctx context.Context, ffiCall ffi.Call) func(*byte) {
-	return func(ptr *byte) {
-		ffiCall(nil, unsafe.Pointer(&ptr))
+}, func(ctx context.Context, ffiCall ffi.Call) func(*resultMjEnvRenderTemplate) {
+	return func(result *resultMjEnvRenderTemplate) {
+		ffiCall(nil, unsafe.Pointer(&result))
 	}
-}, true)
+})

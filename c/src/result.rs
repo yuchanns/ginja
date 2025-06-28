@@ -43,3 +43,25 @@ pub struct mj_result_env_render_template {
     /// Pointer to error information, or NULL on success
     pub error: *mut mj_error,
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mj_result_env_render_template_free(
+    result: *mut mj_result_env_render_template,
+) {
+    if result.is_null() {
+        return;
+    }
+
+    unsafe {
+        let res = &mut *result;
+
+        if !res.result.is_null() {
+            drop(std::ffi::CString::from_raw(res.result));
+        }
+
+        if !res.error.is_null() {
+            drop(Box::from_raw(res.error));
+        }
+        drop(Box::from_raw(result));
+    }
+}

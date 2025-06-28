@@ -55,7 +55,6 @@ func parseError(ctx context.Context, err *mjError) error {
 	if err == nil {
 		return nil
 	}
-	defer mjErrorFree.Symbol(ctx)(err)
 	return &Error{
 		code:    ErrorCode(err.code),
 		message: ffi.BytePtrToString(err.message),

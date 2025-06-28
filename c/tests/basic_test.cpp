@@ -9,50 +9,52 @@ TEST_F(MiniJinjaTest, MultipleValuesInTemplate)
         "}}, Active: {{ active }}");
     EXPECT_EQ(add_result.error, nullptr);
 
-    // Set different types of values
-    mj_value_set_string(value, "name", "Alice");
-    mj_value_set_int32(value, "age", 25);
-    mj_value_set_float32(value, "score", 95.5f);
-    mj_value_set_bool(value, "active", true);
+    // Create JSON data with different types of values
+    std::string json_data = R"({
+        "name": "Alice",
+        "age": 25,
+        "score": 95.5,
+        "active": true
+    })";
 
-    auto render_result = mj_env_render_template(env, "multi_template", value);
-    EXPECT_EQ(render_result.error, nullptr);
-    EXPECT_STREQ(render_result.result,
+    auto render_result = renderTemplate("multi_template", json_data);
+    EXPECT_EQ(render_result->error, nullptr);
+    EXPECT_STREQ(render_result->result,
         "Name: Alice, Age: 25, Score: 95.5, Active: true");
-    mj_str_free(render_result.result);
+    mj_result_env_render_template_free(render_result);
 }
 
 TEST_F(MiniJinjaTest, OverwriteValues)
 {
-    // Test overwriting values with different types
+    // Test different value types using different templates
     auto add_result = mj_env_add_template(env, "test_value", "Value: {{ val }}");
     EXPECT_EQ(add_result.error, nullptr);
 
-    // Set string value
-    mj_value_set_string(value, "val", "Hello");
-    auto render_result1 = mj_env_render_template(env, "test_value", value);
-    EXPECT_EQ(render_result1.error, nullptr);
-    EXPECT_STREQ(render_result1.result, "Value: Hello");
-    mj_str_free(render_result1.result);
+    // Test string value
+    std::string json_data1 = R"({"val": "Hello"})";
+    auto render_result1 = renderTemplate("test_value", json_data1);
+    EXPECT_EQ(render_result1->error, nullptr);
+    EXPECT_STREQ(render_result1->result, "Value: Hello");
+    mj_result_env_render_template_free(render_result1);
 
-    // Overwrite with integer
-    mj_value_set_int(value, "val", 42);
-    auto render_result2 = mj_env_render_template(env, "test_value", value);
-    EXPECT_EQ(render_result2.error, nullptr);
-    EXPECT_STREQ(render_result2.result, "Value: 42");
-    mj_str_free(render_result2.result);
+    // Test integer value
+    std::string json_data2 = R"({"val": 42})";
+    auto render_result2 = renderTemplate("test_value", json_data2);
+    EXPECT_EQ(render_result2->error, nullptr);
+    EXPECT_STREQ(render_result2->result, "Value: 42");
+    mj_result_env_render_template_free(render_result2);
 
-    // Overwrite with float
-    mj_value_set_float(value, "val", 3.14);
-    auto render_result3 = mj_env_render_template(env, "test_value", value);
-    EXPECT_EQ(render_result3.error, nullptr);
-    EXPECT_STREQ(render_result3.result, "Value: 3.14");
-    mj_str_free(render_result3.result);
+    // Test float value
+    std::string json_data3 = R"({"val": 3.14})";
+    auto render_result3 = renderTemplate("test_value", json_data3);
+    EXPECT_EQ(render_result3->error, nullptr);
+    EXPECT_STREQ(render_result3->result, "Value: 3.14");
+    mj_result_env_render_template_free(render_result3);
 
-    // Overwrite with boolean
-    mj_value_set_bool(value, "val", true);
-    auto render_result4 = mj_env_render_template(env, "test_value", value);
-    EXPECT_EQ(render_result4.error, nullptr);
-    EXPECT_STREQ(render_result4.result, "Value: true");
-    mj_str_free(render_result4.result);
+    // Test boolean value
+    std::string json_data4 = R"({"val": true})";
+    auto render_result4 = renderTemplate("test_value", json_data4);
+    EXPECT_EQ(render_result4->error, nullptr);
+    EXPECT_STREQ(render_result4->result, "Value: true");
+    mj_result_env_render_template_free(render_result4);
 }

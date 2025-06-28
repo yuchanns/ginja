@@ -18,4 +18,3 @@ pub use env::mj_env;
 pub use errors::mj_error;
 
 pub use types::mj_undefined_behavior;
-pub use types::mj_value;

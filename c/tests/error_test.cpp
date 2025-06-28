@@ -22,17 +22,16 @@ TEST_F(MiniJinjaTest, ErrorHandling)
 TEST_F(MiniJinjaTest, TemplateNotFound)
 {
     // Test rendering non-existent template
-    auto render_result = mj_env_render_template(env, "non_existent", value);
+    std::string json_data = "{}";
+    auto render_result = renderTemplate("non_existent", json_data);
 
     // This should produce an error
-    EXPECT_NE(render_result.error, nullptr);
-    if (render_result.error != nullptr) {
-        EXPECT_EQ(render_result.error->code, MJ_TEMPLATE_NOT_FOUND);
-        EXPECT_NE(render_result.error->message, nullptr);
-
-        // Test mj_error_free
-        mj_error_free(render_result.error);
+    EXPECT_NE(render_result->error, nullptr);
+    if (render_result->error != nullptr) {
+        EXPECT_EQ(render_result->error->code, MJ_TEMPLATE_NOT_FOUND);
+        EXPECT_NE(render_result->error->message, nullptr);
     }
+    mj_result_env_render_template_free(render_result);
 }
 
 TEST_F(MiniJinjaTest, InvalidTemplateSyntax)
@@ -66,14 +65,11 @@ TEST_F(MiniJinjaTest, InvalidTemplateSyntax)
     EXPECT_EQ(add_result3.error,
         nullptr); // Template syntax is valid, error occurs at render time
 
-    mj_value_set_string(value, "name", "test");
-
-    auto render_result = mj_env_render_template(env, "invalid_filter", value);
-    if (render_result.error != nullptr) {
-        EXPECT_EQ(render_result.error->code, MJ_UNKNOWN_FILTER);
-        EXPECT_NE(render_result.error->message, nullptr);
-        mj_error_free(render_result.error);
-    } else {
-        mj_str_free(render_result.result);
+    std::string json_data = R"({"name": "test"})";
+    auto render_result = renderTemplate("invalid_filter", json_data);
+    if (render_result->error != nullptr) {
+        EXPECT_EQ(render_result->error->code, MJ_UNKNOWN_FILTER);
+        EXPECT_NE(render_result->error->message, nullptr);
     }
+    mj_result_env_render_template_free(render_result);
 }
