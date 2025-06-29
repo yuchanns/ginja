@@ -163,7 +163,7 @@ pub unsafe extern "C" fn mj_env_render(
             }));
         }
     };
-    let value = match serde_json::from_slice::<HashMap<String, Value>>(bytes) {
+    let value = match sonic_rs::from_slice::<HashMap<String, Value>>(bytes) {
         Ok(value) => Value::from(value),
         Err(e) => {
             return Box::into_raw(Box::new(mj_result_env_render_template {
@@ -229,7 +229,7 @@ pub unsafe extern "C" fn mj_env_render_named_string(
     let bytes = unsafe { std::slice::from_raw_parts(data, len) };
     let env_arc = unsafe { &*env }.deref();
     let env_guard = env_arc.read().unwrap();
-    let value = match serde_json::from_slice::<HashMap<String, Value>>(bytes) {
+    let value = match sonic_rs::from_slice::<HashMap<String, Value>>(bytes) {
         Ok(value) => Value::from(value),
         Err(e) => {
             return Box::into_raw(Box::new(mj_result_env_render_template {

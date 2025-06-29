@@ -1,9 +1,9 @@
 package ginja
 
 import (
-	"encoding/json"
 	"unsafe"
 
+	"github.com/bytedance/sonic"
 	"go.yuchanns.xyz/ginja/internal/embed"
 )
 
@@ -64,7 +64,7 @@ func (env *Environment) AddTemplate(name string, source string) (err error) {
 }
 
 func (env *Environment) RenderTemplate(name string, ctx map[string]any) (rendered string, err error) {
-	value, err := json.Marshal(ctx)
+	value, err := sonic.Marshal(ctx)
 	if err != nil {
 		return
 	}

@@ -53,12 +53,13 @@ func (s *Suite) BenchSimpleVariables(b *testing.B) {
 		"age":  30,
 	}
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		err := s.env.AddTemplate("simple", ginjaTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			result, err := s.env.RenderTemplate("simple", data)
 			if err != nil {
@@ -68,12 +69,13 @@ func (s *Suite) BenchSimpleVariables(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		tmpl, err := template.New("simple").Parse(goTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			var buf strings.Builder
 			err := tmpl.Execute(&buf, data)
@@ -104,12 +106,13 @@ func (s *Suite) BenchLoopSmall(b *testing.B) {
 		"users": users,
 	}
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		err := s.env.AddTemplate("loop", ginjaTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			result, err := s.env.RenderTemplate("loop", data)
 			if err != nil {
@@ -119,12 +122,13 @@ func (s *Suite) BenchLoopSmall(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		tmpl, err := template.New("loop").Parse(goTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			var buf strings.Builder
 			err := tmpl.Execute(&buf, data)
@@ -155,12 +159,13 @@ func (s *Suite) BenchLoopLarge(b *testing.B) {
 		"users": users,
 	}
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		err := s.env.AddTemplate("loop_large", ginjaTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			result, err := s.env.RenderTemplate("loop_large", data)
 			if err != nil {
@@ -170,12 +175,13 @@ func (s *Suite) BenchLoopLarge(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		tmpl, err := template.New("loop").Parse(goTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			var buf strings.Builder
 			err := tmpl.Execute(&buf, data)
@@ -249,12 +255,13 @@ func (s *Suite) BenchComplexNested(b *testing.B) {
 		},
 	}
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		err := s.env.AddTemplate("complex", ginjaTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			result, err := s.env.RenderTemplate("complex", ginjaData)
 			if err != nil {
@@ -264,12 +271,13 @@ func (s *Suite) BenchComplexNested(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		tmpl, err := template.New("complex").Parse(goTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			var buf strings.Builder
 			err := tmpl.Execute(&buf, goData)
@@ -315,12 +323,13 @@ func (s *Suite) BenchConditional(b *testing.B) {
 		"users": users,
 	}
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		err := s.env.AddTemplate("conditional", ginjaTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			result, err := s.env.RenderTemplate("conditional", data)
 			if err != nil {
@@ -330,12 +339,13 @@ func (s *Suite) BenchConditional(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		tmpl, err := template.New("conditional").Parse(goTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
+		b.ResetTimer()
 		for b.Loop() {
 			var buf strings.Builder
 			err := tmpl.Execute(&buf, data)
@@ -377,7 +387,7 @@ func (s *Suite) BenchTemplateCompilation(b *testing.B) {
   </div>
 {{ end }}`
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		for b.Loop() {
 			err := s.env.AddTemplate("test", ginjaTemplate)
 			if err != nil {
@@ -386,7 +396,7 @@ func (s *Suite) BenchTemplateCompilation(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		t := template.New("test")
 		for b.Loop() {
 			_, err := t.Parse(goTemplate)
@@ -402,13 +412,14 @@ func (s *Suite) BenchMemoryAllocation(b *testing.B) {
 	ginjaTemplate := "Result: {{ value1 }} + {{ value2 }} = {{ result }}"
 	goTemplate := "Result: {{ .value1 }} + {{ .value2 }} = {{ .result }}"
 
-	b.Run("Ginja", func(b *testing.B) {
+	b.Run("ginja", func(b *testing.B) {
 		err := s.env.AddTemplate("memory", ginjaTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
 		b.ReportAllocs()
+		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
 			data := map[string]any{
 				"value1": i,
@@ -423,13 +434,14 @@ func (s *Suite) BenchMemoryAllocation(b *testing.B) {
 		}
 	})
 
-	b.Run("GoTemplate", func(b *testing.B) {
+	b.Run("std", func(b *testing.B) {
 		tmpl, err := template.New("memory").Parse(goTemplate)
 		if err != nil {
 			b.Fatal(err)
 		}
 
 		b.ReportAllocs()
+		b.ResetTimer()
 		for i := 0; b.Loop(); i++ {
 			data := map[string]any{
 				"value1": i,
