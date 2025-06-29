@@ -1,12 +1,8 @@
 package ginja
 
 import (
-	"context"
 	"fmt"
 	"unsafe"
-
-	jffi "github.com/jupiterrider/ffi"
-	"go.yuchanns.xyz/ginja/internal/ffi"
 )
 
 type ErrorCode int32
@@ -51,23 +47,13 @@ func (e *Error) Message() string {
 	return e.message
 }
 
-func parseError(ctx context.Context, err *mjError) error {
-	if err == nil {
-		return nil
+func parseError(e unsafe.Pointer) (err error) {
+	if e == nil {
+		return
 	}
-	defer mjErrorFree.Symbol(ctx)(err)
+	ret := (*mjError)(e)
 	return &Error{
-		code:    ErrorCode(err.code),
-		message: ffi.BytePtrToString(err.message),
+		code:    ErrorCode(ret.code),
+		message: BytePtrToString(ret.message),
 	}
 }
-
-var mjErrorFree = ffi.NewFFI(ffi.FFIOpts{
-	Sym:    "mj_error_free",
-	RType:  &jffi.TypeVoid,
-	ATypes: []*jffi.Type{&jffi.TypePointer},
-}, func(ctx context.Context, ffiCall ffi.Call) func(*mjError) {
-	return func(e *mjError) {
-		ffiCall(nil, unsafe.Pointer(&e))
-	}
-}, true)

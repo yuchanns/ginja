@@ -103,9 +103,9 @@ impl From<ErrorKind> for mj_code {
 #[repr(C)]
 pub struct mj_error {
     /// The error code categorizing the type of error that occurred
-    code: mj_code,
+    pub(crate) code: mj_code,
     /// Pointer to a null-terminated C string containing the error message
-    message: *const c_char,
+    pub(crate) message: *const c_char,
 }
 
 impl mj_error {

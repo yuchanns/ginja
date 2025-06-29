@@ -1,7 +1,7 @@
 use std::ffi::{CString, c_char, c_void};
 use std::sync::{Arc, RwLock};
 
-use minijinja::{Environment, UndefinedBehavior};
+use minijinja::{Environment, UndefinedBehavior, Value};
 
 use super::*;
 
@@ -53,14 +53,12 @@ impl mj_env {
 /// \note The returned environment should be freed using mj_env_free when
 /// no longer needed to prevent memory leaks.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mj_env_new() -> mj_result_env_new {
+pub unsafe extern "C" fn mj_env_new() -> *mut mj_env {
     let env = Environment::new();
     let env_arc = Arc::new(RwLock::new(env));
-    mj_result_env_new {
-        env: Box::into_raw(Box::new(mj_env {
-            inner: Box::into_raw(Box::new(env_arc)) as *mut c_void,
-        })),
-    }
+    Box::into_raw(Box::new(mj_env {
+        inner: Box::into_raw(Box::new(env_arc)) as *mut c_void,
+    }))
 }
 
 /// \brief Adds a template to the environment with the given name and source code.
@@ -81,7 +79,7 @@ pub unsafe extern "C" fn mj_env_add_template(
     env: *mut mj_env,
     name: *const c_char,
     source: *const c_char,
-) -> mj_result_env_add_template {
+) -> *mut mj_error {
     assert!(!name.is_null());
     assert!(!source.is_null());
     let name = unsafe {
@@ -100,12 +98,8 @@ pub unsafe extern "C" fn mj_env_add_template(
         .unwrap()
         .add_template_owned(name.to_string(), source)
     {
-        Ok(_) => mj_result_env_add_template {
-            error: std::ptr::null_mut(),
-        },
-        Err(e) => mj_result_env_add_template {
-            error: mj_error::new(e),
-        },
+        Ok(_) => std::ptr::null_mut(),
+        Err(e) => mj_error::new(e),
     }
 }
 
@@ -142,57 +136,57 @@ pub unsafe extern "C" fn mj_env_clear_templates(env: *mut mj_env) {
     env_arc.write().unwrap().clear_templates();
 }
 
-/// \brief Renders a template by name with the provided context value.
-///
-/// This function retrieves a previously added template by name and renders it
-/// using the provided context value.
-///
-/// @param env Pointer to the environment containing the template
-/// @param name Null-terminated string containing the name of the template to render
-/// @param value Pointer to the context value to use for rendering
-///
-/// @return mj_result_env_render_template A result structure containing the
-/// rendered string or error information if rendering fails.
-///
-/// \note The name parameter must not be NULL. The returned string should be
-/// freed using mj_str_free when no longer needed.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mj_env_render_template(
+pub unsafe extern "C" fn mj_env_render(
     env: *mut mj_env,
     name: *const c_char,
-    value: *const mj_value,
-) -> mj_result_env_render_template {
+    data: *const u8,
+    len: usize,
+) -> *mut mj_result_env_render_template {
     assert!(!name.is_null());
+    let bytes = unsafe { std::slice::from_raw_parts(data, len) };
     let name = unsafe {
         std::ffi::CStr::from_ptr(name)
             .to_str()
             .expect("malformed name")
     };
     let env_arc = unsafe { &*env }.deref();
-    let value = unsafe { &*value }.deref_as_map().unwrap();
 
-    // We need to hold the lock for the entire operation
     let env_guard = env_arc.read().unwrap();
     let template = match env_guard.get_template(name) {
         Ok(template) => template,
         Err(e) => {
-            return mj_result_env_render_template {
+            return Box::into_raw(Box::new(mj_result_env_render_template {
                 result: std::ptr::null_mut(),
                 error: mj_error::new(e),
-            };
+            }));
         }
     };
-    match template.render(value) {
-        Ok(rendered) => mj_result_env_render_template {
+    let value = match sonic_rs::from_slice::<Value>(bytes) {
+        Ok(value) => value,
+        Err(e) => {
+            return Box::into_raw(Box::new(mj_result_env_render_template {
+                result: std::ptr::null_mut(),
+                error: Box::into_raw(Box::new(mj_error {
+                    code: errors::mj_code::MJ_CANNOT_DESERIALIZE,
+                    message: std::ffi::CString::new(e.to_string())
+                        .expect("CString::new failed")
+                        .into_raw(),
+                })),
+            }));
+        }
+    };
+    match template.render(&value) {
+        Ok(rendered) => Box::into_raw(Box::new(mj_result_env_render_template {
             result: CString::new(rendered)
                 .expect("CString::new failed")
                 .into_raw(),
             error: std::ptr::null_mut(),
-        },
-        Err(e) => mj_result_env_render_template {
+        })),
+        Err(e) => Box::into_raw(Box::new(mj_result_env_render_template {
             result: std::ptr::null_mut(),
             error: mj_error::new(e),
-        },
+        })),
     }
 }
 
@@ -216,9 +210,11 @@ pub unsafe extern "C" fn mj_env_render_named_string(
     env: *mut mj_env,
     name: *const c_char,
     source: *const c_char,
-    value: *const mj_value,
-) -> mj_result_env_render_template {
+    data: *const u8,
+    len: usize,
+) -> *mut mj_result_env_render_template {
     assert!(!name.is_null());
+    assert!(!source.is_null());
     let name = unsafe {
         std::ffi::CStr::from_ptr(name)
             .to_str()
@@ -227,25 +223,36 @@ pub unsafe extern "C" fn mj_env_render_named_string(
     let source = unsafe {
         std::ffi::CStr::from_ptr(source)
             .to_str()
-            .expect("malformed source")
+            .expect("malformed template")
     };
-    let value = unsafe { &*value }.deref_as_map().unwrap();
+    let bytes = unsafe { std::slice::from_raw_parts(data, len) };
     let env_arc = unsafe { &*env }.deref();
-    match env_arc
-        .read()
-        .unwrap()
-        .render_named_str(name, source, value)
-    {
-        Ok(rendered) => mj_result_env_render_template {
+    let env_guard = env_arc.read().unwrap();
+    let value = match sonic_rs::from_slice::<Value>(bytes) {
+        Ok(value) => value,
+        Err(e) => {
+            return Box::into_raw(Box::new(mj_result_env_render_template {
+                result: std::ptr::null_mut(),
+                error: Box::into_raw(Box::new(mj_error {
+                    code: errors::mj_code::MJ_CANNOT_DESERIALIZE,
+                    message: std::ffi::CString::new(e.to_string())
+                        .expect("CString::new failed")
+                        .into_raw(),
+                })),
+            }));
+        }
+    };
+    match env_guard.render_named_str(name, source, &value) {
+        Ok(rendered) => Box::into_raw(Box::new(mj_result_env_render_template {
             result: CString::new(rendered)
                 .expect("CString::new failed")
                 .into_raw(),
             error: std::ptr::null_mut(),
-        },
-        Err(e) => mj_result_env_render_template {
+        })),
+        Err(e) => Box::into_raw(Box::new(mj_result_env_render_template {
             result: std::ptr::null_mut(),
             error: mj_error::new(e),
-        },
+        })),
     }
 }
 
@@ -333,23 +340,4 @@ pub unsafe extern "C" fn mj_env_set_undefined_behavior(
     };
     let env_arc = unsafe { &*env }.deref();
     env_arc.write().unwrap().set_undefined_behavior(behavior);
-}
-
-/// \brief Frees a C string returned by MiniJinja functions.
-///
-/// This function properly deallocates C strings that were allocated by
-/// MiniJinja C API functions, such as rendered template output.
-///
-/// @param ptr Pointer to the C string to free
-///
-/// \note It is safe to pass NULL to this function.
-/// \note Only use this function on strings returned by MiniJinja C API functions.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn mj_str_free(ptr: *mut c_char) {
-    if ptr.is_null() {
-        return;
-    }
-    unsafe {
-        drop(CString::from_raw(ptr));
-    }
 }

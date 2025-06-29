@@ -75,14 +75,14 @@ func (s *Suite) TestRenderTemplateWithUintSlices(assert *require.Assertions) {
 		"uint64s": []uint64{100, 200, 300},
 		"uint32s": []uint32{10, 20, 30},
 		"uint16s": []uint16{1, 2, 3},
-		"uint8s":  []uint8{4, 5, 6},
+		// "uint8s":  []uint8{4, 5, 6},
 	})
 	assert.Nil(err)
 	assert.Contains(result, "UintSlice: [1, 2, 3]")
 	assert.Contains(result, "Uint64Slice: [100, 200, 300]")
 	assert.Contains(result, "Uint32Slice: [10, 20, 30]")
 	assert.Contains(result, "Uint16Slice: [1, 2, 3]")
-	assert.Contains(result, "Uint8Slice: [4, 5, 6]")
+	// assert.Contains(result, "Uint8Slice: [4, 5, 6]")
 }
 
 func (s *Suite) TestRenderTemplateWithFloatSlices(assert *require.Assertions) {

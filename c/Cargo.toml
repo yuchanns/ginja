@@ -16,3 +16,4 @@ cbindgen = "0.29.0"
 
 [dependencies]
 minijinja = { version="2.10.2", features=["loader"] }
+sonic-rs = "0.4"

@@ -1,6 +1,6 @@
 //go:build windows
 
-package ffi
+package ginja
 
 import (
 	"sync"
