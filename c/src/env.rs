@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::ffi::{CString, c_char, c_void};
 use std::sync::{Arc, RwLock};
 
@@ -163,8 +162,8 @@ pub unsafe extern "C" fn mj_env_render(
             }));
         }
     };
-    let value = match sonic_rs::from_slice::<HashMap<String, Value>>(bytes) {
-        Ok(value) => Value::from(value),
+    let value = match sonic_rs::from_slice::<Value>(bytes) {
+        Ok(value) => value,
         Err(e) => {
             return Box::into_raw(Box::new(mj_result_env_render_template {
                 result: std::ptr::null_mut(),
@@ -229,8 +228,8 @@ pub unsafe extern "C" fn mj_env_render_named_string(
     let bytes = unsafe { std::slice::from_raw_parts(data, len) };
     let env_arc = unsafe { &*env }.deref();
     let env_guard = env_arc.read().unwrap();
-    let value = match sonic_rs::from_slice::<HashMap<String, Value>>(bytes) {
-        Ok(value) => Value::from(value),
+    let value = match sonic_rs::from_slice::<Value>(bytes) {
+        Ok(value) => value,
         Err(e) => {
             return Box::into_raw(Box::new(mj_result_env_render_template {
                 result: std::ptr::null_mut(),
