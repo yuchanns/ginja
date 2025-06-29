@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"text/template"
+
+	"github.com/flosch/pongo2/v6"
 )
 
 type BenchmarkData struct {
@@ -85,6 +87,22 @@ func (s *Suite) BenchSimpleVariables(b *testing.B) {
 			_ = buf.String()
 		}
 	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		tmpl, err := pongo2.FromString(ginjaTemplate)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		b.ResetTimer()
+		for b.Loop() {
+			result, err := tmpl.Execute(data)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = result
+		}
+	})
 }
 
 // BenchLoopSmall - Loop rendering benchmark with small dataset
@@ -138,6 +156,22 @@ func (s *Suite) BenchLoopSmall(b *testing.B) {
 			_ = buf.String()
 		}
 	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		tmpl, err := pongo2.FromString(ginjaTemplate)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		b.ResetTimer()
+		for b.Loop() {
+			result, err := tmpl.Execute(data)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = result
+		}
+	})
 }
 
 // BenchLoopLarge - Loop rendering benchmark with large dataset
@@ -189,6 +223,22 @@ func (s *Suite) BenchLoopLarge(b *testing.B) {
 				b.Fatal(err)
 			}
 			_ = buf.String()
+		}
+	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		tmpl, err := pongo2.FromString(ginjaTemplate)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		b.ResetTimer()
+		for b.Loop() {
+			result, err := tmpl.Execute(data)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = result
 		}
 	})
 }
@@ -287,6 +337,22 @@ func (s *Suite) BenchComplexNested(b *testing.B) {
 			_ = buf.String()
 		}
 	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		tmpl, err := pongo2.FromString(ginjaTemplate)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		b.ResetTimer()
+		for b.Loop() {
+			result, err := tmpl.Execute(ginjaData)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = result
+		}
+	})
 }
 
 // BenchConditional - Conditional rendering benchmark
@@ -355,6 +421,22 @@ func (s *Suite) BenchConditional(b *testing.B) {
 			_ = buf.String()
 		}
 	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		tmpl, err := pongo2.FromString(ginjaTemplate)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		b.ResetTimer()
+		for b.Loop() {
+			result, err := tmpl.Execute(data)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = result
+		}
+	})
 }
 
 // BenchTemplateCompilation - Template compilation benchmark
@@ -400,6 +482,15 @@ func (s *Suite) BenchTemplateCompilation(b *testing.B) {
 		t := template.New("test")
 		for b.Loop() {
 			_, err := t.Parse(goTemplate)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		for b.Loop() {
+			_, err := pongo2.FromString(ginjaTemplate)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -454,6 +545,28 @@ func (s *Suite) BenchMemoryAllocation(b *testing.B) {
 				b.Fatal(err)
 			}
 			_ = buf.String()
+		}
+	})
+
+	b.Run("pongo2", func(b *testing.B) {
+		tmpl, err := pongo2.FromString(ginjaTemplate)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; b.Loop(); i++ {
+			data := map[string]any{
+				"value1": i,
+				"value2": i * 2,
+				"result": i + i*2,
+			}
+			result, err := tmpl.Execute(data)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = result
 		}
 	})
 }
